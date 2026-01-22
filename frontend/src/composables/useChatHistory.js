@@ -141,5 +141,6 @@ export function useChatHistory(characterId) {
         init,
         addMessage,
         clearHistory,
+        saveToCache,  // 导出以便在流式更新后手动调用
     }
 }

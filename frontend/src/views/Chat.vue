@@ -89,19 +89,23 @@ const uploadedImageUrl = ref(null)
 
 // 使用对话历史管理
 const characterId = parseInt(route.params.characterId)
-const { messages, init: initHistory, addMessage } = useChatHistory(characterId)
+const { messages, sessionKey, init: initHistory, addMessage, saveToCache } = useChatHistory(characterId)
 
 onMounted(async () => {
-  character.value = await fetchCharacter(characterId)
-  
-  // 初始化对话历史
+  // 先初始化对话历史，避免因角色接口失败导致历史不加载
   await initHistory()
-  
-  // 如果没有历史记录且角色有greeting，添加greeting
-  if (messages.value.length === 0 && character.value.greeting) {
+
+  try {
+    character.value = await fetchCharacter(characterId)
+  } catch (error) {
+    console.error('获取角色失败:', error)
+  }
+
+  // 如果没有历史记录且角色有 greeting，添加 greeting
+  if (messages.value.length === 0 && character.value?.greeting) {
     addMessage('assistant', character.value.greeting)
   }
-  
+
   await scrollToBottom()
 })
 
@@ -181,6 +185,16 @@ async function sendMessage() {
     messages.value[aiMessageIndex].content = `错误: ${error.message}`
   } finally {
     isLoading.value = false
+    
+    // ✅ 关键修复1：保存到localStorage
+    saveToCache()
+    
+    // ✅ 关键修复2：保存AI回复到服务器
+    const aiContent = messages.value[aiMessageIndex].content
+    if (aiContent && aiContent.trim()) {
+      saveMessage(sessionKey.value, characterId, 'assistant', aiContent, null)
+        .catch(err => console.error('保存AI回复到服务器失败:', err))
+    }
   }
 }
 </script>

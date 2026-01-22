@@ -23,6 +23,7 @@
 *   **角色详情**：点击查看角色详细背景、性格关键词（Tags）。
 *   **角色管理 (Admin)**：
     *   创建/编辑角色：设定名称、头像 URL、系统提示词 (System Prompt)、开场白。
+    *   删除角色：支持移除不再使用的角色。
     *   *System Prompt* 是核心，需包含：性格特征、说话口癖、背景故事、对用户的称呼等。
 
 ### 2.2 对话系统 (Chat System)
@@ -37,6 +38,10 @@
     *   用户可上传本地图片。
     *   后端接收图片并存储（本地或 OSS）。
     *   将图片传递给支持 Vision 的大模型（如 GPT-4o-mini 或 Claude-3.5-Sonnet），AI 需能描述或评价图片内容。
+    *   前端支持图片预览与压缩，降低体积并保证上传成功率。
+*   **对话历史管理**：
+    *   会话历史列表展示（按角色或会话分组）。
+    *   支持从服务器获取历史消息，恢复上一次会话上下文。
 
 ### 2.3 界面与交互 (UI/UX)
 *   **风格**：现代、简洁、高质感（Premium）。避免廉价感，使用精心设计的配色和圆角。
@@ -45,6 +50,11 @@
     *   消息发送时的平滑上浮。
     *   流式输出时的光标闪烁效果。
     *   图片上传时的预览与进度提示。
+
+### 2.4 接口与错误处理 (API & Error Handling)
+*   **接口规范**：RESTful 设计，路径清晰、语义明确。
+*   **错误码规范**：统一错误响应结构（code/message/details），前后端一致处理。
+*   **统一异常处理**：后端全局异常过滤器或中间件，避免散落的 try/catch 风格。
 
 ---
 
@@ -79,7 +89,7 @@
 *   **选项 2：SQLite**
     *   *优点*：单文件，零配置，无需安装服务，极其适合演示和小型项目。
     *   *缺点*：并发写入能力弱（但本项目仅为单人演示，无此瓶颈）。
-*   **决策**：**SQLite** (开发阶段)。方便老师直接运行代码，无需配置本地 MySQL 环境。通过 TypeORM，上线时可一键切换至 MySQL。
+*   **决策**：**MySQL** 为考核标准选项，**SQLite** 作为开发/演示环境。通过 TypeORM/配置切换，保证可迁移性与演示便捷性。
 
 #### 3.2.3 AI 模型 (LLM Provider)
 *   **DeepSeek (V3)**: 性价比极高，中文能力强，支持 OpenAI 格式。
@@ -94,13 +104,17 @@
 - `GET /characters`: 获取角色列表
 - `GET /characters/:id`: 获取角色详情
 - `POST /characters`: 创建角色 (Admin)
+- `PATCH /characters/:id`: 更新角色
+- `DELETE /characters/:id`: 删除角色
 
 ### 4.2 对话模块
 - `POST /chat`: 发送消息 (普通 HTTP)
-- `GET /chat/stream`: 流式对话 (SSE Endpoint)
-    - Query Param: `prompt` (用户输入), `characterId` (角色ID), `history` (JSON string)
+- `POST /chat/stream`: 流式对话 (SSE Endpoint)
+    - Body: `characterId`, `message`, `history`, `imageUrl`
 - `POST /upload`: 图片上传
     - Return: `{ "url": "/uploads/xxx.jpg" }`
+- `POST /chat/messages`: 保存消息
+- `GET /chat/sessions/:sessionKey/messages`: 获取会话历史
 
 ---
 
@@ -119,7 +133,13 @@ project-root/
 │   │   ├── characters/ # 角色模块
 │   │   ├── chat/       # 对话模块 (含 LLM 集成)
 │   │   ├── upload/     # 文件上传模块
-│   │   └── common/     # 拦截器 (Res format)
+│   │   └── common/     # 拦截器/异常过滤器 (Res format)
 ├── prd.md              # 需求文档
 └── implementation_plan.md # 实施计划
 ```
+
+## 6. 考核要求对齐 (Assessment Alignment)
+*   **核心功能**：角色配置、智能对话、图片上传、流式回复、历史管理。
+*   **前端**：Vue3 组件化、流式渲染、图片上传与预览/压缩。
+*   **后端**：SSE/WebSocket 流式传输、文件上传服务、LLM API 对接、统一异常处理。
+*   **数据与接口**：RESTful 规范、角色管理 CRUD、对话接口（流式）、历史记录接口、接口错误码规范。
