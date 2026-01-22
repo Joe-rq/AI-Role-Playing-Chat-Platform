@@ -1,7 +1,8 @@
-import { Controller, Post, Body, Res, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Body, Res, Param, HttpStatus } from '@nestjs/common';
 import type { Response } from 'express';
 import { ChatService } from './chat.service';
 import { ChatRequestDto } from './dto/chat-request.dto';
+import { SaveMessageDto } from './dto/save-message.dto';
 
 @Controller('chat')
 export class ChatController {
@@ -35,5 +36,23 @@ export class ChatController {
             res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
             res.status(HttpStatus.INTERNAL_SERVER_ERROR).end();
         }
+    }
+
+    /**
+     * 保存消息
+     * POST /chat/messages
+     */
+    @Post('messages')
+    async saveMessage(@Body() dto: SaveMessageDto) {
+        return this.chatService.saveMessage(dto);
+    }
+
+    /**
+     * 获取会话历史
+     * GET /chat/sessions/:sessionKey/messages
+     */
+    @Get('sessions/:sessionKey/messages')
+    async getHistory(@Param('sessionKey') sessionKey: string) {
+        return this.chatService.getHistory(sessionKey);
     }
 }

@@ -70,3 +70,27 @@ export async function* streamChat(characterId, message, history = [], imageUrl =
         }
     }
 }
+
+// 保存消息到服务器
+export async function saveMessage(sessionKey, characterId, role, content, imageUrl = null) {
+    const payload = {
+        sessionKey,
+        characterId,
+        role,
+        content,
+        ...(imageUrl && { imageUrl }),
+    }
+
+    const res = await fetch(`${API_BASE}/chat/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    })
+    return res.json()
+}
+
+// 获取会话历史
+export async function getHistory(sessionKey) {
+    const res = await fetch(`${API_BASE}/chat/sessions/${sessionKey}/messages`)
+    return res.json()
+}

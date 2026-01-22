@@ -70,30 +70,45 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MarkdownIt from 'markdown-it'
 import { fetchCharacter, streamChat, uploadImage } from '../services/api'
+import { useChatHistory } from '../composables/useChatHistory'
 
 const route = useRoute()
 const router = useRouter()
 const md = new MarkdownIt()
 
 const character = ref(null)
-const messages = ref([])
 const inputText = ref('')
 const isLoading = ref(false)
 const messagesContainer = ref(null)
 const previewImage = ref(null)
 const uploadedImageUrl = ref(null)
 
+// 使用对话历史管理
+const characterId = parseInt(route.params.characterId)
+const { messages, init: initHistory, addMessage } = useChatHistory(characterId)
+
 onMounted(async () => {
-  const characterId = parseInt(route.params.characterId)
   character.value = await fetchCharacter(characterId)
-  if (character.value.greeting) {
-    messages.value.push({ role: 'assistant', content: character.value.greeting })
+  
+  // 初始化对话历史
+  await initHistory()
+  
+  // 如果没有历史记录且角色有greeting，添加greeting
+  if (messages.value.length === 0 && character.value.greeting) {
+    addMessage('assistant', character.value.greeting)
   }
+  
+  await scrollToBottom()
 })
+
+// 监听messages变化，自动滚动
+watch(messages, async () => {
+  await scrollToBottom()
+}, { deep: true })
 
 function goBack() { router.push('/') }
 function renderMarkdown(content) { return md.render(content || '') }
@@ -128,48 +143,44 @@ async function sendMessage() {
   if (!inputText.value.trim() && !uploadedImageUrl.value) return
   if (isLoading.value) return
 
-  const userMessage = {
-    role: 'user',
-    content: inputText.value,
-    imageUrl: uploadedImageUrl.value,
-  }
-  messages.value.push(userMessage)
-  await scrollToBottom()
+  // 保存用户消息
+  const userMessage = inputText.value
+  const userImage = uploadedImageUrl.value
+  addMessage('user', userMessage, userImage)
 
+  // 构建历史记录（不包括刚添加的用户消息）
   const history = messages.value.slice(0, -1).map(m => ({
     role: m.role,
     content: m.content,
   }))
 
-  const currentMessage = inputText.value
-  const currentImage = uploadedImageUrl.value
+  // 清空输入
   inputText.value = ''
-  // Reset height
   const textarea = document.querySelector('.chat-textarea');
   if(textarea) textarea.style.height = 'auto';
-
   clearImage()
+  
   isLoading.value = true
 
-  const assistantMessage = { role: 'assistant', content: '' }
-  messages.value.push(assistantMessage)
-  await scrollToBottom()
+  // 创建AI消息占位
+  const aiMessageIndex = messages.value.length
+  addMessage('assistant', '')
 
   try {
+    let fullResponse = ''
     for await (const chunk of streamChat(
       character.value.id,
-      currentMessage,
+      userMessage,
       history,
-      currentImage
+      userImage
     )) {
-      assistantMessage.content += chunk
-      await scrollToBottom()
+      fullResponse += chunk
+      messages.value[aiMessageIndex].content = fullResponse
     }
   } catch (error) {
-    assistantMessage.content = `错误: ${error.message}`
+    messages.value[aiMessageIndex].content = `错误: ${error.message}`
   } finally {
     isLoading.value = false
-    await scrollToBottom()
   }
 }
 </script>

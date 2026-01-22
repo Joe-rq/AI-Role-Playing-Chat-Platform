@@ -5,6 +5,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CharactersModule } from './characters/characters.module';
 import { Character } from './characters/entities/character.entity';
+import { Session } from './chat/entities/session.entity';
+import { Message } from './chat/entities/message.entity';
 import { ChatModule } from './chat/chat.module';
 import { UploadModule } from './upload/upload.module';
 
@@ -16,7 +18,7 @@ import { UploadModule } from './upload/upload.module';
     TypeOrmModule.forRoot({
       type: 'sqlite',
       database: 'database.sqlite',
-      entities: [Character],
+      entities: [Character, Session, Message],
       synchronize: true, // 开发阶段自动同步
     }),
     CharactersModule,

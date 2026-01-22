@@ -8,22 +8,33 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ChatService = void 0;
 const common_1 = require("@nestjs/common");
+const typeorm_1 = require("@nestjs/typeorm");
+const typeorm_2 = require("typeorm");
 const config_1 = require("@nestjs/config");
 const openai_1 = __importDefault(require("openai"));
 const characters_service_1 = require("../characters/characters.service");
+const session_entity_1 = require("./entities/session.entity");
+const message_entity_1 = require("./entities/message.entity");
 let ChatService = class ChatService {
     configService;
     charactersService;
+    sessionRepository;
+    messageRepository;
     openai;
-    constructor(configService, charactersService) {
+    constructor(configService, charactersService, sessionRepository, messageRepository) {
         this.configService = configService;
         this.charactersService = charactersService;
+        this.sessionRepository = sessionRepository;
+        this.messageRepository = messageRepository;
         this.openai = new openai_1.default({
             apiKey: this.configService.get('OPENAI_API_KEY') || 'your-api-key',
             baseURL: this.configService.get('OPENAI_BASE_URL') || 'https://api.openai.com/v1',
@@ -72,11 +83,65 @@ let ChatService = class ChatService {
             }
         }
     }
+    async saveMessage(dto) {
+        let session = await this.sessionRepository.findOne({
+            where: { sessionKey: dto.sessionKey }
+        });
+        if (!session) {
+            session = this.sessionRepository.create({
+                sessionKey: dto.sessionKey,
+                characterId: dto.characterId,
+            });
+            await this.sessionRepository.save(session);
+        }
+        const message = this.messageRepository.create({
+            sessionId: session.id,
+            role: dto.role,
+            content: dto.content,
+            imageUrl: dto.imageUrl,
+        });
+        const savedMessage = await this.messageRepository.save(message);
+        return {
+            messageId: savedMessage.id,
+            sessionId: session.id,
+        };
+    }
+    async getHistory(sessionKey) {
+        const session = await this.sessionRepository.findOne({
+            where: { sessionKey },
+            relations: ['messages'],
+        });
+        if (!session) {
+            return {
+                sessionId: null,
+                characterId: null,
+                messages: [],
+            };
+        }
+        const messages = session.messages
+            .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+            .map(msg => ({
+            id: msg.id,
+            role: msg.role,
+            content: msg.content,
+            imageUrl: msg.imageUrl,
+            createdAt: msg.createdAt.toISOString(),
+        }));
+        return {
+            sessionId: session.id,
+            characterId: session.characterId,
+            messages,
+        };
+    }
 };
 exports.ChatService = ChatService;
 exports.ChatService = ChatService = __decorate([
     (0, common_1.Injectable)(),
+    __param(2, (0, typeorm_1.InjectRepository)(session_entity_1.Session)),
+    __param(3, (0, typeorm_1.InjectRepository)(message_entity_1.Message)),
     __metadata("design:paramtypes", [config_1.ConfigService,
-        characters_service_1.CharactersService])
+        characters_service_1.CharactersService,
+        typeorm_2.Repository,
+        typeorm_2.Repository])
 ], ChatService);
 //# sourceMappingURL=chat.service.js.map

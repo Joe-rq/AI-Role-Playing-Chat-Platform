@@ -14,6 +14,8 @@ const app_controller_1 = require("./app.controller");
 const app_service_1 = require("./app.service");
 const characters_module_1 = require("./characters/characters.module");
 const character_entity_1 = require("./characters/entities/character.entity");
+const session_entity_1 = require("./chat/entities/session.entity");
+const message_entity_1 = require("./chat/entities/message.entity");
 const chat_module_1 = require("./chat/chat.module");
 const upload_module_1 = require("./upload/upload.module");
 let AppModule = class AppModule {
@@ -28,7 +30,7 @@ exports.AppModule = AppModule = __decorate([
             typeorm_1.TypeOrmModule.forRoot({
                 type: 'sqlite',
                 database: 'database.sqlite',
-                entities: [character_entity_1.Character],
+                entities: [character_entity_1.Character, session_entity_1.Session, message_entity_1.Message],
                 synchronize: true,
             }),
             characters_module_1.CharactersModule,

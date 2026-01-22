@@ -1,8 +1,13 @@
 import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { ChatRequestDto } from './dto/chat-request.dto';
+import { SaveMessageDto } from './dto/save-message.dto';
 import { CharactersService } from '../characters/characters.service';
+import { Session } from './entities/session.entity';
+import { Message } from './entities/message.entity';
 
 @Injectable()
 export class ChatService {
@@ -11,6 +16,10 @@ export class ChatService {
     constructor(
         private readonly configService: ConfigService,
         private readonly charactersService: CharactersService,
+        @InjectRepository(Session)
+        private readonly sessionRepository: Repository<Session>,
+        @InjectRepository(Message)
+        private readonly messageRepository: Repository<Message>,
     ) {
         this.openai = new OpenAI({
             apiKey: this.configService.get<string>('OPENAI_API_KEY') || 'your-api-key',
@@ -69,5 +78,73 @@ export class ChatService {
                 yield content;
             }
         }
+    }
+
+    /**
+     * 保存消息到数据库（自动创建或复用会话）
+     */
+    async saveMessage(dto: SaveMessageDto) {
+        // 查找或创建会话
+        let session = await this.sessionRepository.findOne({
+            where: { sessionKey: dto.sessionKey }
+        });
+
+        if (!session) {
+            session = this.sessionRepository.create({
+                sessionKey: dto.sessionKey,
+                characterId: dto.characterId,
+            });
+            await this.sessionRepository.save(session);
+        }
+
+        // 保存消息
+        const message = this.messageRepository.create({
+            sessionId: session.id,
+            role: dto.role,
+            content: dto.content,
+            imageUrl: dto.imageUrl,
+        });
+
+        const savedMessage = await this.messageRepository.save(message);
+
+        return {
+            messageId: savedMessage.id,
+            sessionId: session.id,
+        };
+    }
+
+    /**
+     * 获取会话历史消息
+     */
+    async getHistory(sessionKey: string) {
+        const session = await this.sessionRepository.findOne({
+            where: { sessionKey },
+            relations: ['messages'],
+        });
+
+        if (!session) {
+            return {
+                sessionId: null,
+                characterId: null,
+                messages: [],
+            };
+        }
+
+        // 按创建时间排序
+        const messages = session.messages
+            .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+            .map(msg => ({
+                id: msg.id,
+                role: msg.role,
+                content: msg.content,
+                imageUrl: msg.imageUrl,
+                createdAt: msg.createdAt.toISOString(),
+            }));
+
+        return {
+            sessionId: session.id,
+            characterId: session.characterId,
+            messages,
+        };
     }
 }

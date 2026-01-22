@@ -16,6 +16,7 @@ exports.ChatController = void 0;
 const common_1 = require("@nestjs/common");
 const chat_service_1 = require("./chat.service");
 const chat_request_dto_1 = require("./dto/chat-request.dto");
+const save_message_dto_1 = require("./dto/save-message.dto");
 let ChatController = class ChatController {
     chatService;
     constructor(chatService) {
@@ -39,6 +40,12 @@ let ChatController = class ChatController {
             res.status(common_1.HttpStatus.INTERNAL_SERVER_ERROR).end();
         }
     }
+    async saveMessage(dto) {
+        return this.chatService.saveMessage(dto);
+    }
+    async getHistory(sessionKey) {
+        return this.chatService.getHistory(sessionKey);
+    }
 };
 exports.ChatController = ChatController;
 __decorate([
@@ -49,6 +56,20 @@ __decorate([
     __metadata("design:paramtypes", [chat_request_dto_1.ChatRequestDto, Object]),
     __metadata("design:returntype", Promise)
 ], ChatController.prototype, "streamChat", null);
+__decorate([
+    (0, common_1.Post)('messages'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [save_message_dto_1.SaveMessageDto]),
+    __metadata("design:returntype", Promise)
+], ChatController.prototype, "saveMessage", null);
+__decorate([
+    (0, common_1.Get)('sessions/:sessionKey/messages'),
+    __param(0, (0, common_1.Param)('sessionKey')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], ChatController.prototype, "getHistory", null);
 exports.ChatController = ChatController = __decorate([
     (0, common_1.Controller)('chat'),
     __metadata("design:paramtypes", [chat_service_1.ChatService])
