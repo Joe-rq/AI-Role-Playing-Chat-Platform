@@ -7,9 +7,25 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // 启用 CORS
+  // 启用 CORS - 动态配置
   app.enableCors({
-    origin: ['http://localhost:5173', 'http://localhost:3000'],
+    origin: (origin, callback) => {
+      // 开发环境：允许所有 localhost 端口
+      if (process.env.NODE_ENV !== 'production') {
+        if (!origin || origin.match(/^http:\/\/localhost:\d+$/)) {
+          callback(null, true);
+          return;
+        }
+      }
+
+      // 生产环境：从环境变量读取允许的域名（用逗号分隔）
+      const allowedOrigins = process.env.CORS_ORIGINS?.split(',') || [];
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     credentials: true,
   });

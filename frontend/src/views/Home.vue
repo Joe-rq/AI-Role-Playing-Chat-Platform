@@ -1,6 +1,9 @@
 <template>
   <div class="home">
-    <h1>选择角色</h1>
+    <div class="header">
+      <h1>选择角色</h1>
+      <button class="create-btn" @click="showCreateForm = true">+ 创建角色</button>
+    </div>
     <div class="character-list">
       <div
         v-for="character in characters"
@@ -16,8 +19,7 @@
       </div>
     </div>
     <div v-if="characters.length === 0" class="empty">
-      <p>暂无角色，请先创建</p>
-      <button @click="showCreateForm = true">创建角色</button>
+      <p>暂无角色，点击上方按钮创建你的第一个角色！</p>
     </div>
 
     <!-- 创建角色表单 -->
@@ -80,15 +82,38 @@ async function handleCreate() {
   min-height: 100vh;
 }
 
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+}
+
 h1 {
   font-size: 2.5rem;
   font-weight: 800;
-  text-align: center;
-  margin-bottom: 40px;
+  margin: 0;
   background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   letter-spacing: -1px;
+}
+
+.create-btn {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  padding: 12px 24px;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  font-size: 1rem;
+  box-shadow: 0 4px 15px rgba(255, 100, 150, 0.3);
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+.create-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 100, 150, 0.4);
 }
 
 /* Character Grid */

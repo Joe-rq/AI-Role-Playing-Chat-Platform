@@ -7,7 +7,21 @@ const app_module_1 = require("./app.module");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     app.enableCors({
-        origin: ['http://localhost:5173', 'http://localhost:3000'],
+        origin: (origin, callback) => {
+            if (process.env.NODE_ENV !== 'production') {
+                if (!origin || origin.match(/^http:\/\/localhost:\d+$/)) {
+                    callback(null, true);
+                    return;
+                }
+            }
+            const allowedOrigins = process.env.CORS_ORIGINS?.split(',') || [];
+            if (allowedOrigins.includes(origin)) {
+                callback(null, true);
+            }
+            else {
+                callback(new Error('Not allowed by CORS'));
+            }
+        },
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
         credentials: true,
     });

@@ -73,7 +73,7 @@
 import { ref, onMounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MarkdownIt from 'markdown-it'
-import { fetchCharacter, streamChat, uploadImage } from '../services/api'
+import { fetchCharacter, streamChat, uploadImage, saveMessage } from '../services/api'
 import { useChatHistory } from '../composables/useChatHistory'
 
 const route = useRoute()
@@ -166,9 +166,9 @@ async function sendMessage() {
   
   isLoading.value = true
 
-  // 创建AI消息占位
+  // 创建AI消息占位（不写入服务器，等流式完成再保存）
   const aiMessageIndex = messages.value.length
-  addMessage('assistant', '')
+  addMessage('assistant', '', null, { saveServer: false })
 
   try {
     let fullResponse = ''

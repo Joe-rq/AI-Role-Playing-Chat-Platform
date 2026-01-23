@@ -65,9 +65,10 @@ export function useChatHistory(characterId) {
 
         try {
             const data = await getHistory(sessionKey.value)
-            if (data.messages && data.messages.length > 0) {
-                // 服务器有更多数据，合并到本地
-                messages.value = data.messages.map(msg => ({
+            const serverMessages = data.messages || []
+            if (serverMessages.length > messages.value.length) {
+                // 服务器数据更多时才覆盖本地，避免丢失未同步内容
+                messages.value = serverMessages.map(msg => ({
                     role: msg.role,
                     content: msg.content,
                     imageUrl: msg.imageUrl,
@@ -102,15 +103,17 @@ export function useChatHistory(characterId) {
     /**
      * 添加消息（用户或AI）
      */
-    function addMessage(role, content, imageUrl = null) {
+    function addMessage(role, content, imageUrl = null, options = {}) {
         const message = { role, content, imageUrl }
         messages.value.push(message)
 
         // 立即保存到 localStorage
         saveToCache()
 
-        // 异步保存到服务器
-        saveMessageToServer(role, content, imageUrl)
+        // 异步保存到服务器（默认开启）
+        if (options.saveServer !== false) {
+            saveMessageToServer(role, content, imageUrl)
+        }
     }
 
     /**
