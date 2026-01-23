@@ -38,9 +38,21 @@ export class ChatService {
             },
         ];
 
-        // 添加历史记录
+        // 添加历史记录（滑动窗口截断）
         if (chatRequest.history && chatRequest.history.length > 0) {
-            for (const msg of chatRequest.history) {
+            const maxTurns = parseInt(this.configService.get<string>('MAX_HISTORY_TURNS') || '20');
+            const originalLength = chatRequest.history.length;
+
+            // 只保留最近 N 轮对话（每轮包含用户消息和AI回复，算作2条消息）
+            const maxMessages = maxTurns * 2;
+            const truncatedHistory = chatRequest.history.slice(-maxMessages);
+
+            // 日志记录截断情况
+            if (originalLength > maxMessages) {
+                console.log(`[上下文窗口] 截断历史消息: ${originalLength} -> ${truncatedHistory.length} (保留最近${maxTurns}轮)`);
+            }
+
+            for (const msg of truncatedHistory) {
                 messages.push({
                     role: msg.role,
                     content: msg.content,
@@ -64,6 +76,9 @@ export class ChatService {
                 content: chatRequest.message,
             });
         }
+
+        // 日志：记录最终发送的消息数量
+        console.log(`[LLM请求] 总消息数: ${messages.length} (system: 1, history: ${messages.length - 2}, current: 1)`);
 
         // 调用 LLM API (流式)
         const stream = await this.openai.chat.completions.create({
