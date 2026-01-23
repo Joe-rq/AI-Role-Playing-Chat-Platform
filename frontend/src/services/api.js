@@ -37,7 +37,17 @@ export async function deleteCharacter(id) {
     const res = await fetch(`${API_BASE}/characters/${id}`, {
         method: 'DELETE',
     })
-    return res.json()
+    const data = await res.json().catch(() => ({}))
+    return { ok: res.ok, data }
+}
+
+// 删除角色相关对话历史
+export async function deleteCharacterHistory(characterId) {
+    const res = await fetch(`${API_BASE}/chat/sessions/character/${characterId}`, {
+        method: 'DELETE',
+    })
+    const data = await res.json().catch(() => ({}))
+    return { ok: res.ok, data }
 }
 
 // 上传图片

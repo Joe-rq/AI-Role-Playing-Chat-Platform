@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Res, Param, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Body, Res, Param, HttpStatus, Delete } from '@nestjs/common';
 import type { Response } from 'express';
 import { ChatService } from './chat.service';
 import { ChatRequestDto } from './dto/chat-request.dto';
@@ -54,5 +54,14 @@ export class ChatController {
     @Get('sessions/:sessionKey/messages')
     async getHistory(@Param('sessionKey') sessionKey: string) {
         return this.chatService.getHistory(sessionKey);
+    }
+
+    /**
+     * 删除指定角色的所有会话与消息
+     * DELETE /chat/sessions/character/:characterId
+     */
+    @Delete('sessions/character/:characterId')
+    async clearCharacterHistory(@Param('characterId') characterId: string) {
+        return this.chatService.clearCharacterHistory(+characterId);
     }
 }

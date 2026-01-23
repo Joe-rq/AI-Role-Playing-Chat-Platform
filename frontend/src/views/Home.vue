@@ -64,7 +64,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { fetchCharacters, createCharacter, updateCharacter, deleteCharacter } from '../services/api'
+import { fetchCharacters, createCharacter, updateCharacter, deleteCharacter, deleteCharacterHistory } from '../services/api'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
 
 const router = useRouter()
@@ -113,14 +113,41 @@ function confirmDelete(character) {
 
 async function handleDelete() {
   try {
-    const result = await deleteCharacter(characterToDelete.value.id)
-    if (result.success) {
-      characters.value = await fetchCharacters()
-      alert(result.message || '删除成功')
+    const { ok, data } = await deleteCharacter(characterToDelete.value.id)
+
+    if (!ok) {
+      const message = data.message || '删除失败'
+      const hasHistory = data.statusCode === 400 && /对话记录/.test(message)
+      if (hasHistory) {
+        const shouldClear = window.confirm(`${message}\n是否清空该角色历史并继续删除？`)
+        if (!shouldClear) return
+
+        const clearResult = await deleteCharacterHistory(characterToDelete.value.id)
+        if (!clearResult.ok) {
+          alert(clearResult.data.message || '清空历史失败')
+          return
+        }
+
+        const retry = await deleteCharacter(characterToDelete.value.id)
+        if (!retry.ok) {
+          alert(retry.data.message || '删除失败')
+          return
+        }
+
+        characters.value = await fetchCharacters()
+        alert(retry.data.message || '删除成功')
+        return
+      }
+
+      alert(message)
+      return
     }
+
+    characters.value = await fetchCharacters()
+    alert(data.message || '删除成功')
   } catch (error) {
-    const errorData = await error.json?.() || {}
-    alert(errorData.message || '删除失败，该角色可能已有对话记录')
+    console.error('删除操作出错:', error)
+    alert('网络错误，请稍后再试')
   } finally {
     showDeleteDialog.value = false
     characterToDelete.value = null

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { ChatRequestDto } from './dto/chat-request.dto';
@@ -145,6 +145,34 @@ export class ChatService {
             sessionId: session.id,
             characterId: session.characterId,
             messages,
+        };
+    }
+
+    /**
+     * 删除指定角色的所有会话与消息
+     */
+    async clearCharacterHistory(characterId: number) {
+        const sessions = await this.sessionRepository.find({
+            where: { characterId },
+        });
+
+        if (sessions.length === 0) {
+            return { deletedSessions: 0, deletedMessages: 0 };
+        }
+
+        const sessionIds = sessions.map(session => session.id);
+
+        const deleteMessagesResult = await this.messageRepository.delete({
+            sessionId: In(sessionIds),
+        });
+
+        const deleteSessionsResult = await this.sessionRepository.delete({
+            id: In(sessionIds),
+        });
+
+        return {
+            deletedSessions: deleteSessionsResult.affected || 0,
+            deletedMessages: deleteMessagesResult.affected || 0,
         };
     }
 }
