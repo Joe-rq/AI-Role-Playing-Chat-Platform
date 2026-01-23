@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { AppModule } from './app.module';
+import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -38,6 +39,9 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
     }),
   );
+
+  // 全局异常过滤器
+  app.useGlobalFilters(new GlobalExceptionFilter());
 
   // 静态文件服务 (上传的图片)
   app.useStaticAssets(join(process.cwd(), 'uploads'), {

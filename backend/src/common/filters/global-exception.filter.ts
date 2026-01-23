@@ -17,8 +17,8 @@ import { ErrorCode } from '../constants/error-code';
 export class GlobalExceptionFilter implements ExceptionFilter {
     catch(exception: unknown, host: ArgumentsHost) {
         const ctx = host.switchToHttp();
-        const response = ctx.getResponse<Response>();
-        const request = ctx.getRequest<Request>();
+        const res = ctx.getResponse<Response>();
+        const req = ctx.getRequest<Request>();
 
         let status: number;
         let code: number;
@@ -48,25 +48,24 @@ export class GlobalExceptionFilter implements ExceptionFilter {
             message = '服务器内部错误';
             details = process.env.NODE_ENV === 'development' ? String(exception) : undefined;
 
-            // 生产环境记录完整错误日志
+            // 记录完整错误日志
             console.error('[全局异常]', exception);
         }
 
         // 统一响应格式
-        const errorResponse = {
+        const errorResponse: any = {
             statusCode: status,
             code,
             message,
-            details,
             timestamp: new Date().toISOString(),
-            path: request.url,
+            path: req.url,
         };
 
-        // 移除 undefined 字段
-        Object.keys(errorResponse).forEach(
-            key => (errorResponse as any)[key] === undefined && delete (errorResponse as any)[key]
-        );
+        // 仅在有 details 时添加
+        if (details !== undefined) {
+            errorResponse.details = details;
+        }
 
-        response.status(status).json(errorResponse);
+        res.status(status).json(errorResponse);
     }
 }
