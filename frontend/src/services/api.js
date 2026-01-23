@@ -22,6 +22,24 @@ export async function createCharacter(data) {
     return res.json()
 }
 
+// 更新角色
+export async function updateCharacter(id, data) {
+    const res = await fetch(`${API_BASE}/characters/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    })
+    return res.json()
+}
+
+// 删除角色
+export async function deleteCharacter(id) {
+    const res = await fetch(`${API_BASE}/characters/${id}`, {
+        method: 'DELETE',
+    })
+    return res.json()
+}
+
 // 上传图片
 export async function uploadImage(file) {
     const formData = new FormData()

@@ -1,1 +1,29 @@
+# Environment variables
 backend/.env
+frontend/.env
+
+# Database files
+*.sqlite
+*.sqlite3
+*.db
+
+# Build outputs and dependencies
+backend/dist/
+backend/node_modules/
+frontend/node_modules/
+
+# Cache and temp files
+*.log
+*.tmp
+.DS_Store
+backend/dist/tsconfig.build.tsbuildinfo
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Package manager files
+package-lock.json
+yarn.lock

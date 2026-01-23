@@ -16,36 +16,62 @@
           <h3>{{ character.name }}</h3>
           <p>{{ character.description }}</p>
         </div>
+        <div class="card-actions" @click.stop>
+          <button class="btn-edit" @click="handleEdit(character)" title="编辑">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
+          <button class="btn-delete" @click="confirmDelete(character)" title="删除">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
     <div v-if="characters.length === 0" class="empty">
       <p>暂无角色，点击上方按钮创建你的第一个角色！</p>
     </div>
 
-    <!-- 创建角色表单 -->
+    <!-- 创建/编辑角色表单 -->
     <div v-if="showCreateForm" class="create-form">
-      <h2>创建新角色</h2>
+      <h2>{{ isEditMode ? '编辑角色' : '创建新角色' }}</h2>
       <input v-model="newCharacter.name" placeholder="角色名称" />
       <input v-model="newCharacter.avatar" placeholder="头像URL（可选）" />
       <textarea v-model="newCharacter.systemPrompt" placeholder="系统提示词（角色设定）"></textarea>
       <textarea v-model="newCharacter.greeting" placeholder="开场白"></textarea>
       <textarea v-model="newCharacter.description" placeholder="简介"></textarea>
       <div class="form-actions">
-        <button @click="handleCreate">创建</button>
-        <button @click="showCreateForm = false">取消</button>
+        <button @click="handleSubmit">{{ isEditMode ? '保存' : '创建' }}</button>
+        <button @click="cancelForm">取消</button>
       </div>
     </div>
+
+    <!-- 删除确认对话框 -->
+    <ConfirmDialog
+      :visible="showDeleteDialog"
+      title="确认删除"
+      :message="deleteMessage"
+      @confirm="handleDelete"
+      @cancel="showDeleteDialog = false"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { fetchCharacters, createCharacter } from '../services/api'
+import { fetchCharacters, createCharacter, updateCharacter, deleteCharacter } from '../services/api'
+import ConfirmDialog from '../components/ConfirmDialog.vue'
 
 const router = useRouter()
 const characters = ref([])
 const showCreateForm = ref(false)
+const isEditMode = ref(false)
+const editingCharacterId = ref(null)
 const newCharacter = ref({
   name: '',
   avatar: '',
@@ -53,6 +79,10 @@ const newCharacter = ref({
   greeting: '',
   description: '',
 })
+
+const showDeleteDialog = ref(false)
+const deleteMessage = ref('')
+const characterToDelete = ref(null)
 
 onMounted(async () => {
   characters.value = await fetchCharacters()
@@ -62,14 +92,66 @@ function startChat(characterId) {
   router.push(`/chat/${characterId}`)
 }
 
-async function handleCreate() {
+function handleEdit(character) {
+  isEditMode.value = true
+  editingCharacterId.value = character.id
+  newCharacter.value = {
+    name: character.name,
+    avatar: character.avatar || '',
+    systemPrompt: character.systemPrompt,
+    greeting: character.greeting || '',
+    description: character.description || '',
+  }
+  showCreateForm.value = true
+}
+
+function confirmDelete(character) {
+  characterToDelete.value = character
+  deleteMessage.value = `确定要删除角色 "${character.name}" 吗？此操作不可恢复。`
+  showDeleteDialog.value = true
+}
+
+async function handleDelete() {
+  try {
+    const result = await deleteCharacter(characterToDelete.value.id)
+    if (result.success) {
+      characters.value = await fetchCharacters()
+      alert(result.message || '删除成功')
+    }
+  } catch (error) {
+    const errorData = await error.json?.() || {}
+    alert(errorData.message || '删除失败，该角色可能已有对话记录')
+  } finally {
+    showDeleteDialog.value = false
+    characterToDelete.value = null
+  }
+}
+
+async function handleSubmit() {
   if (!newCharacter.value.name || !newCharacter.value.systemPrompt) {
     alert('请填写名称和系统提示词')
     return
   }
-  await createCharacter(newCharacter.value)
-  characters.value = await fetchCharacters()
+
+  try {
+    if (isEditMode.value) {
+      await updateCharacter(editingCharacterId.value, newCharacter.value)
+      alert('角色更新成功')
+    } else {
+      await createCharacter(newCharacter.value)
+      alert('角色创建成功')
+    }
+    characters.value = await fetchCharacters()
+    cancelForm()
+  } catch (error) {
+    alert(isEditMode.value ? '更新失败' : '创建失败')
+  }
+}
+
+function cancelForm() {
   showCreateForm.value = false
+  isEditMode.value = false
+  editingCharacterId.value = null
   newCharacter.value = { name: '', avatar: '', systemPrompt: '', greeting: '', description: '' }
 }
 </script>
@@ -187,6 +269,55 @@ h1 {
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Card Actions */
+.card-actions {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  transition: var(--transition);
+}
+
+.character-card:hover .card-actions {
+  opacity: 1;
+}
+
+.card-actions button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.btn-edit {
+  color: var(--primary-color);
+}
+
+.btn-edit:hover {
+  background: var(--primary-color);
+  color: white;
+  transform: scale(1.1);
+}
+
+.btn-delete {
+  color: #ff6b6b;
+}
+
+.btn-delete:hover {
+  background: #ff6b6b;
+  color: white;
+  transform: scale(1.1);
 }
 
 /* Empty State */

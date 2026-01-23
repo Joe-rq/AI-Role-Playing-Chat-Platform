@@ -1,15 +1,18 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateCharacterDto } from './dto/create-character.dto';
 import { UpdateCharacterDto } from './dto/update-character.dto';
 import { Character } from './entities/character.entity';
+import { Session } from '../chat/entities/session.entity';
 
 @Injectable()
 export class CharactersService {
   constructor(
     @InjectRepository(Character)
     private readonly characterRepository: Repository<Character>,
+    @InjectRepository(Session)
+    private readonly sessionRepository: Repository<Session>,
   ) { }
 
   async create(createCharacterDto: CreateCharacterDto): Promise<Character> {
@@ -37,8 +40,24 @@ export class CharactersService {
     return this.characterRepository.save(character);
   }
 
-  async remove(id: number): Promise<void> {
+  async remove(id: number): Promise<{ success: boolean; message?: string }> {
     const character = await this.findOne(id);
+
+    // 检查是否有对话记录
+    const sessionCount = await this.sessionRepository.count({
+      where: { characterId: id },
+    });
+
+    if (sessionCount > 0) {
+      throw new BadRequestException(
+        `无法删除角色"${character.name}"，该角色已有 ${sessionCount} 条对话记录。建议编辑而非删除。`
+      );
+    }
+
     await this.characterRepository.remove(character);
+    return {
+      success: true,
+      message: `角色"${character.name}"已成功删除`,
+    };
   }
 }
