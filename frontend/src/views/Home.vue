@@ -15,6 +15,13 @@
         <div class="info">
           <h3>{{ character.name }}</h3>
           <p>{{ character.description }}</p>
+          
+          <!-- Tags 展示 -->
+          <div v-if="character.tags && character.tags.length" class="tags-display">
+            <span v-for="tag in character.tags" :key="tag" class="tag-badge">
+              {{ tag }}
+            </span>
+          </div>
         </div>
         <div class="card-actions" @click.stop>
           <button class="btn-edit" @click="handleEdit(character)" title="编辑">
@@ -41,6 +48,10 @@
       <h2>{{ isEditMode ? '编辑角色' : '创建新角色' }}</h2>
       <input v-model="newCharacter.name" placeholder="角色名称" />
       <input v-model="newCharacter.avatar" placeholder="头像URL（可选）" />
+      
+      <!-- Tags 输入 -->
+      <TagsInput v-model="newCharacter.tags" />
+      
       <textarea v-model="newCharacter.systemPrompt" placeholder="系统提示词（角色设定）"></textarea>
       <textarea v-model="newCharacter.greeting" placeholder="开场白"></textarea>
       <textarea v-model="newCharacter.description" placeholder="简介"></textarea>
@@ -66,6 +77,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { fetchCharacters, createCharacter, updateCharacter, deleteCharacter, deleteCharacterHistory } from '../services/api'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
+import TagsInput from '../components/TagsInput.vue'
 
 const router = useRouter()
 const characters = ref([])
@@ -78,6 +90,7 @@ const newCharacter = ref({
   systemPrompt: '',
   greeting: '',
   description: '',
+  tags: [],  // 新增 tags 字段
 })
 
 const showDeleteDialog = ref(false)
@@ -101,6 +114,7 @@ function handleEdit(character) {
     systemPrompt: character.systemPrompt,
     greeting: character.greeting || '',
     description: character.description || '',
+    tags: character.tags || [],  // 加载 tags 数据
   }
   showCreateForm.value = true
 }
@@ -179,7 +193,7 @@ function cancelForm() {
   showCreateForm.value = false
   isEditMode.value = false
   editingCharacterId.value = null
-  newCharacter.value = { name: '', avatar: '', systemPrompt: '', greeting: '', description: '' }
+  newCharacter.value = { name: '', avatar: '', systemPrompt: '', greeting: '', description: '', tags: [] }
 }
 </script>
 
@@ -293,9 +307,36 @@ h1 {
   color: var(--text-secondary);
   line-height: 1.5;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  margin-bottom: 8px;
+}
+
+/* Tags 展示 */
+.tags-display {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.tag-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+  transition: all 0.2s;
+}
+
+.tag-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(102, 126, 234, 0.4);
 }
 
 /* Card Actions */
