@@ -332,25 +332,99 @@ export class ChatService {
     }
 
     /**
-     * 获取可用的AI模型列表
+     * 获取可用的AI模型列表（2026年最新）
      */
     async getAvailableModels() {
         return {
             models: [
+                // === OpenAI ===
+                {
+                    id: 'gpt-5.2-chat',
+                    name: 'GPT-5.2 Chat',
+                    provider: 'OpenAI',
+                    description: '最新GPT-5系列，极强推理和创造力'
+                },
+                {
+                    id: 'gpt-5.1',
+                    name: 'GPT-5.1',
+                    provider: 'OpenAI',
+                    description: 'GPT-5标准版，全面升级'
+                },
                 {
                     id: 'gpt-4o',
                     name: 'GPT-4o',
-                    description: '最强模型，适合复杂推理和创作'
+                    provider: 'OpenAI',
+                    description: '多模态旗舰模型，支持文本、图像、音频'
                 },
                 {
                     id: 'gpt-4o-mini',
                     name: 'GPT-4o Mini',
+                    provider: 'OpenAI',
                     description: '高性价比，日常对话推荐'
                 },
+
+                // === Anthropic Claude ===
                 {
-                    id: 'gpt-3.5-turbo',
-                    name: 'GPT-3.5 Turbo',
-                    description: '快速响应，低成本选择'
+                    id: 'claude-opus-4.5',
+                    name: 'Claude Opus 4.5',
+                    provider: 'Anthropic',
+                    description: '最强推理能力，适合复杂任务'
+                },
+                {
+                    id: 'claude-sonnet-4.5',
+                    name: 'Claude Sonnet 4.5',
+                    provider: 'Anthropic',
+                    description: '平衡性能与成本，推荐'
+                },
+
+                // === Google Gemini ===
+                {
+                    id: 'gemini-3-pro',
+                    name: 'Gemini 3 Pro',
+                    provider: 'Google',
+                    description: '最新Gemini模型，强大多模态能力'
+                },
+                {
+                    id: 'gemini-3-flash',
+                    name: 'Gemini 3 Flash',
+                    provider: 'Google',
+                    description: '高性能低成本，快速响应'
+                },
+
+                // === 阿里 Qwen ===
+                {
+                    id: 'qwen-max',
+                    name: 'Qwen Max',
+                    provider: 'Alibaba',
+                    description: '通义千问最强模型'
+                },
+                {
+                    id: 'qwen-plus',
+                    name: 'Qwen Plus',
+                    provider: 'Alibaba',
+                    description: '通义千问平衡版'
+                },
+
+                // === DeepSeek ===
+                {
+                    id: 'deepseek-chat',
+                    name: 'DeepSeek Chat (V3.2)',
+                    provider: 'DeepSeek',
+                    description: '高性价比，671B参数MoE模型'
+                },
+
+                // === 智谱 GLM ===
+                {
+                    id: 'glm-4.7',
+                    name: 'GLM-4.7',
+                    provider: 'Zhipu AI',
+                    description: '最新旗舰模型，强大编码能力'
+                },
+                {
+                    id: 'glm-4.7-flash',
+                    name: 'GLM-4.7 Flash',
+                    provider: 'Zhipu AI',
+                    description: '轻量高效，适合本地部署'
                 },
             ],
             defaultModel: this.configService.get<string>('OPENAI_MODEL') || 'gpt-4o-mini'
