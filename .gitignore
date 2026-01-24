@@ -25,5 +25,11 @@ backend/dist/tsconfig.build.tsbuildinfo
 *.swo
 
 # Package manager files
-package-lock.json
 yarn.lock
+
+# Upload directories
+backend/uploads/
+uploads/
+
+# Internal node_modules files
+**/node_modules/.package-lock.json
