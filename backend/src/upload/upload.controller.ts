@@ -3,12 +3,13 @@ import {
     Post,
     UseInterceptors,
     UploadedFile,
-    BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { UploadService } from './upload.service';
+import { BusinessException } from '../common/exceptions/business.exception';
+import { ErrorCode } from '../common/constants/error-code';
 
 @Controller('upload')
 export class UploadController {
@@ -28,7 +29,7 @@ export class UploadController {
             fileFilter: (req, file, callback) => {
                 // 只允许图片格式
                 if (!file.mimetype.match(/\/(jpg|jpeg|png|gif|webp)$/)) {
-                    return callback(new BadRequestException('只支持图片文件'), false);
+                    return callback(new BusinessException(ErrorCode.INVALID_INPUT, '只支持图片文件') as any, false);
                 }
                 callback(null, true);
             },
@@ -39,7 +40,7 @@ export class UploadController {
     )
     uploadFile(@UploadedFile() file: Express.Multer.File) {
         if (!file) {
-            throw new BadRequestException('请上传文件');
+            throw new BusinessException(ErrorCode.FILE_UPLOAD_ERROR, '请上传文件');
         }
         return {
             url: this.uploadService.getFileUrl(file.filename),

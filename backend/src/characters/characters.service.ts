@@ -1,10 +1,12 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateCharacterDto } from './dto/create-character.dto';
 import { UpdateCharacterDto } from './dto/update-character.dto';
 import { Character } from './entities/character.entity';
 import { Session } from '../chat/entities/session.entity';
+import { BusinessException } from '../common/exceptions/business.exception';
+import { ErrorCode } from '../common/constants/error-code';
 
 @Injectable()
 export class CharactersService {
@@ -29,7 +31,10 @@ export class CharactersService {
   async findOne(id: number): Promise<Character> {
     const character = await this.characterRepository.findOne({ where: { id } });
     if (!character) {
-      throw new NotFoundException(`Character with ID ${id} not found`);
+      throw new BusinessException(
+        ErrorCode.CHARACTER_NOT_FOUND,
+        `角色 ID ${id} 不存在`,
+      );
     }
     return character;
   }
@@ -49,8 +54,9 @@ export class CharactersService {
     });
 
     if (sessionCount > 0) {
-      throw new BadRequestException(
-        `无法删除角色"${character.name}"，该角色已有 ${sessionCount} 条对话记录。建议编辑而非删除。`
+      throw new BusinessException(
+        ErrorCode.CHARACTER_HAS_SESSIONS,
+        `无法删除角色"${character.name}"，该角色已有 ${sessionCount} 条对话记录。建议编辑而非删除。`,
       );
     }
 
