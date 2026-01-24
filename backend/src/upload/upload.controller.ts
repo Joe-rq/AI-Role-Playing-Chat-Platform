@@ -5,8 +5,7 @@ import {
     UploadedFile,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { memoryStorage } from 'multer';
 import { UploadService } from './upload.service';
 import { BusinessException } from '../common/exceptions/business.exception';
 import { ErrorCode } from '../common/constants/error-code';
@@ -18,14 +17,7 @@ export class UploadController {
     @Post()
     @UseInterceptors(
         FileInterceptor('file', {
-            storage: diskStorage({
-                destination: './uploads',
-                filename: (req, file, callback) => {
-                    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-                    const ext = extname(file.originalname);
-                    callback(null, `${uniqueSuffix}${ext}`);
-                },
-            }),
+            storage: memoryStorage(), // 使用内存存储，传递buffer给sharp
             fileFilter: (req, file, callback) => {
                 // 只允许图片格式
                 if (!file.mimetype.match(/\/(jpg|jpeg|png|gif|webp)$/)) {
@@ -34,19 +26,22 @@ export class UploadController {
                 callback(null, true);
             },
             limits: {
-                fileSize: 5 * 1024 * 1024, // 5MB
+                fileSize: 10 * 1024 * 1024, // 10MB（压缩前可以更大）
             },
         }),
     )
-    uploadFile(@UploadedFile() file: Express.Multer.File) {
+    async uploadFile(@UploadedFile() file: Express.Multer.File) {
         if (!file) {
             throw new BusinessException(ErrorCode.FILE_UPLOAD_ERROR, '请上传文件');
         }
+
+        // 使用sharp处理图片
+        const url = await this.uploadService.uploadImage(file);
+
         return {
-            url: this.uploadService.getFileUrl(file.filename),
-            filename: file.filename,
+            url,
             originalName: file.originalname,
-            size: file.size,
+            originalSize: file.size,
         };
     }
 }

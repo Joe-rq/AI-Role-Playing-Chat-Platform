@@ -31,11 +31,14 @@ export class ChatService {
     async *streamChat(chatRequest: ChatRequestDto): AsyncGenerator<string> {
         const character = await this.charactersService.findOne(chatRequest.characterId);
 
+        // ✅ 替换systemPrompt中的变量占位符
+        const systemPrompt = this.replaceVariables(character.systemPrompt, chatRequest);
+
         // 构建消息数组
         const messages: OpenAI.ChatCompletionMessageParam[] = [
             {
                 role: 'system',
-                content: character.systemPrompt,
+                content: systemPrompt,
             },
         ];
 
@@ -429,5 +432,45 @@ export class ChatService {
             ],
             defaultModel: this.configService.get<string>('OPENAI_MODEL') || 'gpt-4o-mini'
         };
+    }
+
+    /**
+     * 替换prompt中的变量占位符
+     * @param prompt 原始prompt
+     * @param chatRequest 请求信息
+     * @returns 替换后的prompt
+     */
+    private replaceVariables(prompt: string, chatRequest: ChatRequestDto): string {
+        if (!prompt) return prompt;
+
+        const now = new Date();
+
+        // 定义可用变量
+        const variables = {
+            '{{user_name}}': '用户',  // 默认称呼
+            '{{current_time}}': now.toLocaleTimeString('zh-CN', {
+                hour: '2-digit',
+                minute: '2-digit'
+            }),
+            '{{current_date}}': now.toLocaleDateString('zh-CN', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                weekday: 'long'
+            }),
+            '{{current_datetime}}': now.toLocaleString('zh-CN'),
+            '{{current_year}}': now.getFullYear().toString(),
+            '{{current_month}}': (now.getMonth() + 1).toString(),
+            '{{current_day}}': now.getDate().toString(),
+            '{{weekday}}': ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][now.getDay()],
+        };
+
+        // 替换所有占位符
+        let result = prompt;
+        for (const [key, value] of Object.entries(variables)) {
+            result = result.replace(new RegExp(key.replace(/[{}]/g, '\\$&'), 'g'), value);
+        }
+
+        return result;
     }
 }
