@@ -335,6 +335,13 @@ async function sendMessage() {
     currentAbortController = null
     isLoading.value = false
     
+    // ✅ AI回复完成后，自动聚焦回输入框
+    await nextTick() // 等待DOM更新（disabled状态解除）
+    const textarea = document.querySelector('.chat-textarea')
+    if (textarea) {
+      textarea.focus()
+    }
+    
     // ✅ 关键修复1：保存到localStorage
     saveToCache()
     
