@@ -71,4 +71,12 @@ export class ModelsController {
     await this.modelsService.remove(id);
     return { message: 'Model deleted successfully' };
   }
+
+  /**
+   * POST /models/:id/test - 测试模型连接
+   */
+  @Post(':id/test')
+  async testConnection(@Param('id', ParseIntPipe) id: number): Promise<{ success: boolean; message: string; details?: any }> {
+    return this.modelsService.testConnection(id);
+  }
 }

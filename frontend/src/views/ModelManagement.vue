@@ -34,6 +34,9 @@
           </div>
         </div>
         <div class="model-actions">
+          <button @click="handleTest(model)" class="test-btn" :disabled="testingModelId === model.id">
+            {{ testingModelId === model.id ? '测试中...' : '测试连接' }}
+          </button>
           <button @click="handleEdit(model)" class="edit-btn">编辑</button>
           <button @click="handleDelete(model.id)" class="delete-btn">删除</button>
           <button
@@ -68,7 +71,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { getModels, createModel, updateModel, deleteModel } from '../services/api'
+import { getModels, createModel, updateModel, deleteModel, testModelConnection } from '../services/api'
 import Drawer from '../components/Drawer.vue'
 import ModelForm from '../components/ModelForm.vue'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
@@ -79,6 +82,7 @@ const showModelDialog = ref(false)
 const editingModel = ref(null)
 const showDeleteConfirm = ref(false)
 const modelToDelete = ref(null)
+const testingModelId = ref(null)
 
 onMounted(async () => {
   await loadModels()
@@ -167,6 +171,24 @@ async function toggleEnabled(model) {
   } catch (error) {
     console.error('更新模型状态失败:', error)
     alert('更新失败：' + error.message)
+  }
+}
+
+async function handleTest(model) {
+  try {
+    testingModelId.value = model.id
+    const result = await testModelConnection(model.id)
+
+    if (result.success) {
+      alert(`✅ ${result.message}\n\n模型: ${result.details?.model || model.modelId}\nToken使用: ${JSON.stringify(result.details?.usage || {})}`)
+    } else {
+      alert(`❌ ${result.message}\n\n错误详情: ${result.details?.error || '未知错误'}`)
+    }
+  } catch (error) {
+    console.error('测试连接失败:', error)
+    alert('测试失败：' + error.message)
+  } finally {
+    testingModelId.value = null
   }
 }
 </script>
@@ -360,6 +382,20 @@ code {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
+}
+
+.model-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.test-btn {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.test-btn:hover:not(:disabled) {
+  background: #bfdbfe;
 }
 
 .edit-btn {

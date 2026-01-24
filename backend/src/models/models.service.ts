@@ -149,6 +149,52 @@ export class ModelsService {
   }
 
   /**
+   * 测试模型连接
+   */
+  async testConnection(id: number): Promise<{ success: boolean; message: string; details?: any }> {
+    const model = await this.modelsRepository.findOne({ where: { id } });
+    if (!model) {
+      throw new NotFoundException(`Model with ID ${id} not found`);
+    }
+
+    try {
+      const decryptedApiKey = decrypt(model.apiKey);
+
+      // 动态导入OpenAI SDK
+      const OpenAI = (await import('openai')).default;
+      const openai = new OpenAI({
+        apiKey: decryptedApiKey,
+        baseURL: model.baseURL,
+      });
+
+      // 发送简单的测试请求
+      const response = await openai.chat.completions.create({
+        model: model.modelId,
+        messages: [{ role: 'user', content: 'Hi' }],
+        max_tokens: 5,
+      });
+
+      return {
+        success: true,
+        message: '连接成功！模型响应正常。',
+        details: {
+          model: response.model,
+          usage: response.usage,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `连接失败：${error.message}`,
+        details: {
+          error: error.message,
+          code: error.code,
+        },
+      };
+    }
+  }
+
+  /**
    * 获取解密后的API Key（仅供内部使用）
    */
   getDecryptedApiKey(model: Model): string {

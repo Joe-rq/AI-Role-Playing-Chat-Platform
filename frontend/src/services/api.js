@@ -219,3 +219,15 @@ export async function deleteModel(id) {
     return res.json()
 }
 
+// 测试模型连接
+export async function testModelConnection(id) {
+    const res = await fetch(`${API_BASE}/models/${id}/test`, {
+        method: 'POST',
+    })
+    if (!res.ok) {
+        const error = await res.json().catch(() => ({ message: '测试连接失败' }))
+        throw new Error(error.message || '测试连接失败')
+    }
+    return res.json()
+}
+
