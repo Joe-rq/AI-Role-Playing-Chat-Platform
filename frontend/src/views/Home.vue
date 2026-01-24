@@ -58,6 +58,38 @@
       <textarea v-model="newCharacter.systemPrompt" placeholder="系统提示词（角色设定）"></textarea>
       <textarea v-model="newCharacter.greeting" placeholder="开场白"></textarea>
       <textarea v-model="newCharacter.description" placeholder="简介"></textarea>
+      
+      <!-- Few-shot 示例对话 -->
+      <ExampleDialogues v-model="exampleDialogues" />
+      
+      <!-- 模型配置 -->
+      <div class="model-config">
+        <h3>AI模型配置（可选）</h3>
+        
+        <label>
+          首选模型:
+          <select v-model="newCharacter.preferredModel">
+            <option value="">使用默认模型</option>
+            <option v-for="model in availableModels" :key="model.id" :value="model.id">
+              {{ model.name }} - {{ model.description }}
+            </option>
+          </select>
+        </label>
+        
+        <label>
+          创造性 (Temperature): {{ newCharacter.temperature }}
+          <input type="range" v-model.number="newCharacter.temperature" 
+                 min="0" max="1" step="0.1" />
+          <span class="hint">0=严谨客观 | 1=创造发散</span>
+        </label>
+        
+        <label>
+          最大回复长度:
+          <input type="number" v-model.number="newCharacter.maxTokens" 
+                 min="500" max="4000" step="100" placeholder="2000" />
+          <span class="hint">建议1000-3000，过大会增加成本</span>
+        </label>
+      </div>
       <div class="form-actions">
         <button @click="handleSubmit">{{ isEditMode ? '保存' : '创建' }}</button>
         <button @click="cancelForm">取消</button>
@@ -78,22 +110,28 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { fetchCharacters, createCharacter, updateCharacter, deleteCharacter, deleteCharacterHistory } from '../services/api'
+import { fetchCharacters, createCharacter, updateCharacter, deleteCharacter, deleteCharacterHistory, getAvailableModels } from '../services/api'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
 import TagsInput from '../components/TagsInput.vue'
+import ExampleDialogues from '../components/ExampleDialogues.vue'
 
 const router = useRouter()
 const characters = ref([])
 const showCreateForm = ref(false)
 const isEditMode = ref(false)
 const editingCharacterId = ref(null)
+const availableModels = ref([])
+const exampleDialogues = ref([])
 const newCharacter = ref({
   name: '',
   avatar: '',
   systemPrompt: '',
   greeting: '',
   description: '',
-  tags: [],  // 新增 tags 字段
+  tags: [],
+  preferredModel: '',
+  temperature: 0.7,
+  maxTokens: 2000,
 })
 
 const showDeleteDialog = ref(false)
@@ -102,6 +140,14 @@ const characterToDelete = ref(null)
 
 onMounted(async () => {
   characters.value = await fetchCharacters()
+  
+  // 加载可用模型列表
+  try {
+    const modelData = await getAvailableModels()
+    availableModels.value = modelData.models || []
+  } catch (error) {
+    console.error('加载模型列表失败:', error)
+  }
 })
 
 function startChat(characterId) {
@@ -117,8 +163,21 @@ function handleEdit(character) {
     systemPrompt: character.systemPrompt,
     greeting: character.greeting || '',
     description: character.description || '',
-    tags: character.tags || [],  // 加载 tags 数据
+    tags: character.tags || [],
+    preferredModel: character.preferredModel || '',
+    temperature: character.temperature ?? 0.7,
+    maxTokens: character.maxTokens ?? 2000,
   }
+  
+  // 加载 Few-shot 示例
+  try {
+    exampleDialogues.value = character.exampleDialogues 
+      ? JSON.parse(character.exampleDialogues)
+      : []
+  } catch (e) {
+    exampleDialogues.value = []
+  }
+  
   showCreateForm.value = true
 }
 
@@ -178,11 +237,23 @@ async function handleSubmit() {
   }
 
   try {
+    // 序列化 Few-shot 示例（过滤空值）
+    const validExamples = exampleDialogues.value.filter(
+      ex => ex.user && ex.user.trim() && ex.assistant && ex.assistant.trim()
+    )
+    
+    const characterData = {
+      ...newCharacter.value,
+      exampleDialogues: validExamples.length > 0 
+        ? JSON.stringify(validExamples) 
+        : null
+    }
+    
     if (isEditMode.value) {
-      await updateCharacter(editingCharacterId.value, newCharacter.value)
+      await updateCharacter(editingCharacterId.value, characterData)
       alert('角色更新成功')
     } else {
-      await createCharacter(newCharacter.value)
+      await createCharacter(characterData)
       alert('角色创建成功')
     }
     characters.value = await fetchCharacters()
@@ -196,7 +267,18 @@ function cancelForm() {
   showCreateForm.value = false
   isEditMode.value = false
   editingCharacterId.value = null
-  newCharacter.value = { name: '', avatar: '', systemPrompt: '', greeting: '', description: '', tags: [] }
+  exampleDialogues.value = []
+  newCharacter.value = { 
+    name: '', 
+    avatar: '', 
+    systemPrompt: '', 
+    greeting: '', 
+    description: '', 
+    tags: [],
+    preferredModel: '',
+    temperature: 0.7,
+    maxTokens: 2000,
+  }
 }
 </script>
 
@@ -454,6 +536,8 @@ button:hover {
   box-shadow: var(--shadow-md);
   width: 90%;
   max-width: 500px;
+  max-height: 90vh; /* 限制最大高度 */
+  overflow-y: auto; /* 允许垂直滚动 */
   z-index: 100;
   border: 1px solid rgba(255,255,255,0.5);
   animation: fadeIn 0.3s ease;
@@ -489,6 +573,45 @@ button:hover {
   resize: vertical;
 }
 
+.model-config {
+  margin: 20px 0;
+  padding: 16px;
+  background: rgba(100, 100, 255, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(100, 100, 255, 0.2);
+}
+
+.model-config h3 {
+  margin: 0 0 16px 0;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.model-config label {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.model-config select,
+.model-config input[type="number"] {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.model-config input[type="range"] {
+  width: 100%;
+  margin: 8px 0;
+}
+
+.model-config .hint {
+  display: block;
+  font-size: 0.8rem;
+  color: #999;
+  margin-top: 4px;
+}
+
 .form-actions {
   display: flex;
   justify-content: flex-end;
@@ -513,7 +636,7 @@ button:hover {
   top: -100vh; left: -100vw; right: -100vw; bottom: -100vh;
   background: rgba(0,0,0,0.3);
   z-index: -1;
-  pointer-events: all;
+  pointer-events: none; /* 不拦截点击事件 */
 }
 
 @media (max-width: 640px) {

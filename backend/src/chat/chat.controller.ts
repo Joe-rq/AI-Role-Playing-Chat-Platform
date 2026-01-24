@@ -108,4 +108,13 @@ export class ChatController {
     async exportSession(@Param('sessionKey') sessionKey: string) {
         return this.chatService.exportSession(sessionKey);
     }
+
+    /**
+     * 获取可用的AI模型列表
+     * GET /chat/models
+     */
+    @Get('models')
+    async getAvailableModels() {
+        return this.chatService.getAvailableModels();
+    }
 }

@@ -98,6 +98,12 @@ import hljs from 'highlight.js/lib/core'
 import javascript from 'highlight.js/lib/languages/javascript'
 import python from 'highlight.js/lib/languages/python'
 import typescript from 'highlight.js/lib/languages/typescript'
+import xml from 'highlight.js/lib/languages/xml'
+import css from 'highlight.js/lib/languages/css'
+import json from 'highlight.js/lib/languages/json'
+import bash from 'highlight.js/lib/languages/bash'
+import sql from 'highlight.js/lib/languages/sql'
+import markdown from 'highlight.js/lib/languages/markdown'
 import 'highlight.js/styles/github-dark.css' // 代码高亮样式
 import Compressor from 'compressorjs'
 import { fetchCharacter, streamChat, uploadImage, saveMessage } from '../services/api'
@@ -105,8 +111,21 @@ import { useChatHistory } from '../composables/useChatHistory'
 
 // 注册常用语言
 hljs.registerLanguage('javascript', javascript)
+hljs.registerLanguage('js', javascript)
 hljs.registerLanguage('python', python)
+hljs.registerLanguage('py', python)
 hljs.registerLanguage('typescript', typescript)
+hljs.registerLanguage('ts', typescript)
+hljs.registerLanguage('html', xml)
+hljs.registerLanguage('xml', xml)
+hljs.registerLanguage('css', css)
+hljs.registerLanguage('json', json)
+hljs.registerLanguage('bash', bash)
+hljs.registerLanguage('shell', bash)
+hljs.registerLanguage('sh', bash)
+hljs.registerLanguage('sql', sql)
+hljs.registerLanguage('markdown', markdown)
+hljs.registerLanguage('md', markdown)
 
 const route = useRoute()
 const router = useRouter()
@@ -514,6 +533,41 @@ async function confirmClearHistory() {
   border-bottom-left-radius: 4px;
   border: 1px solid rgba(0,0,0,0.05);
 }
+
+/* 代码块样式优化 */
+.message pre {
+  margin: 12px 0;
+  border-radius: 8px;
+  overflow-x: auto;
+  background: #1e1e1e !important;
+}
+
+.message code {
+  font-family: 'Fira Code', 'Monaco', 'Consolas', 'Courier New', monospace;
+}
+
+.message pre code {
+  display: block;
+  padding: 16px;
+  line-height: 1.6;
+  font-size: 0.9em;
+}
+
+/* 行内代码样式 */
+.message :not(pre) > code {
+  background: rgba(135, 131, 120, 0.15);
+  color: #e83e8c;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-weight: 500;
+}
+
+.message.user :not(pre) > code {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
 
 .message-image {
   max-width: 100%;

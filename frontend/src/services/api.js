@@ -156,3 +156,9 @@ export async function exportSession(sessionKey) {
 
     return data
 }
+
+// 获取可用的AI模型列表
+export async function getAvailableModels() {
+    const res = await fetch(`${API_BASE}/chat/models`)
+    return res.json()
+}

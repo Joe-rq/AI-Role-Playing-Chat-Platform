@@ -53,6 +53,24 @@ export class ChatService {
                 this.logger.log(`上下文窗口截断: ${originalLength} -> ${truncatedHistory.length} (保留最近${maxTurns}轮)`);
             }
 
+            // ✅ 注入 Few-shot 示例对话（在历史消息之前）
+            if (character.exampleDialogues) {
+                try {
+                    const examples = JSON.parse(character.exampleDialogues);
+                    if (Array.isArray(examples) && examples.length > 0) {
+                        this.logger.log(`注入 ${examples.length} 个Few-shot示例`);
+                        for (const example of examples) {
+                            if (example.user && example.assistant) {
+                                messages.push({ role: 'user', content: example.user });
+                                messages.push({ role: 'assistant', content: example.assistant });
+                            }
+                        }
+                    }
+                } catch (e) {
+                    this.logger.warn('Few-shot示例解析失败', e);
+                }
+            }
+
             for (const msg of truncatedHistory) {
                 messages.push({
                     role: msg.role,
@@ -81,11 +99,20 @@ export class ChatService {
         // 日志：记录最终发送的消息数量
         this.logger.log(`LLM请求 - 总消息数: ${messages.length} (system: 1, history: ${messages.length - 2}, current: 1)`);
 
+        // ✅ 使用角色配置的模型和参数
+        const model = character.preferredModel || this.configService.get<string>('OPENAI_MODEL') || 'gpt-4o-mini';
+        const temperature = character.temperature ?? 0.7;
+        const maxTokens = character.maxTokens ?? 2000;
+
+        this.logger.log(`模型配置 - model: ${model}, temperature: ${temperature}, maxTokens: ${maxTokens}`);
+
         // 调用 LLM API (流式) - 启用 Token 统计
         const stream = await this.openai.chat.completions.create({
-            model: this.configService.get<string>('OPENAI_MODEL') || 'gpt-4o-mini',
+            model: model,
             messages,
             stream: true,
+            temperature: temperature,
+            max_tokens: maxTokens,
             stream_options: { include_usage: true }, // 启用 Token 统计
         });
 
@@ -302,5 +329,31 @@ export class ChatService {
      */
     async exportSession(sessionKey: string) {
         return await this.getHistory(sessionKey);
+    }
+
+    /**
+     * 获取可用的AI模型列表
+     */
+    async getAvailableModels() {
+        return {
+            models: [
+                {
+                    id: 'gpt-4o',
+                    name: 'GPT-4o',
+                    description: '最强模型，适合复杂推理和创作'
+                },
+                {
+                    id: 'gpt-4o-mini',
+                    name: 'GPT-4o Mini',
+                    description: '高性价比，日常对话推荐'
+                },
+                {
+                    id: 'gpt-3.5-turbo',
+                    name: 'GPT-3.5 Turbo',
+                    description: '快速响应，低成本选择'
+                },
+            ],
+            defaultModel: this.configService.get<string>('OPENAI_MODEL') || 'gpt-4o-mini'
+        };
     }
 }
