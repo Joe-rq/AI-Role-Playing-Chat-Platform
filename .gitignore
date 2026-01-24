@@ -1,35 +1,40 @@
-# 依赖 (所有目录)
+# Dependency directories
 node_modules/
-# 警告：不要忽略 lock 文件！
-# yarn.lock  <- 删除了，除非确定不需要它
-# package-lock.json <- 确保这个文件是被 git 追踪的
 
-# 环境与数据库
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Environment variables
 .env
-*.env.local
-*.sqlite
-*.db
+.env.*
+!.env.example
 
-# 编译产物
+# Build outputs
 dist/
 build/
 .cache/
 
-# 运行时上传目录 (保留目录，忽略文件)
+# Runtime data & Uploads (Ignore content, keep directory)
 backend/uploads/*
 !backend/uploads/.gitkeep
 
-# 系统文件
-.DS_Store
-Thumbs.db
-
-# IDE 和编辑器
+# IDE & Editor config
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# 日志和临时文件
+# Logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# Misc
 *.tmp
-backend/dist/tsconfig.build.tsbuildinfo
