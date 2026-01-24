@@ -1,12 +1,12 @@
 <template>
   <div class="chat-page">
     <header class="chat-header">
-      <button @click="goBack">返回</button>
+      <button @click="goBack" type="button">返回</button>
       <div class="character-info" v-if="character">
         <img :src="character.avatar || '/default-avatar.png'" :alt="character.name" />
         <span>{{ character.name }}</span>
       </div>
-      <button @click="confirmClearHistory" class="clear-btn" title="清空历史">🗑️</button>
+      <button @click="openClearDialog" type="button" class="clear-btn" title="清空历史">🗑️</button>
     </header>
 
     <div class="messages-container" ref="messagesContainer" @scroll="handleScroll">
@@ -87,12 +87,21 @@
         </div>
       </div>
     </div>
+
+    <ConfirmDialog
+      :visible="showClearDialog"
+      title="确认清空"
+      message="确定要清空所有历史记录吗？此操作不可恢复！"
+      @confirm="confirmClearHistory"
+      @cancel="closeClearDialog"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, nextTick, watch } from 'vue'
 import { useRoute,useRouter } from 'vue-router'
+import ConfirmDialog from '../components/ConfirmDialog.vue'
 import MarkdownIt from 'markdown-it'
 import hljs from 'highlight.js/lib/core'
 import javascript from 'highlight.js/lib/languages/javascript'
@@ -153,6 +162,7 @@ const uploadedImageUrl = ref(null)
 const uploadProgress = ref(0) // 上传进度
 const isUploading = ref(false) // 上传中状态
 let currentAbortController = null // AbortController 用于停止生成
+const showClearDialog = ref(false)
 
 // 使用对话历史管理
 const characterId = parseInt(route.params.characterId)
@@ -379,14 +389,18 @@ function stopGeneration() {
   }
 }
 
-async function confirmClearHistory() {
-  if (!confirm('确定要清空所有历史记录吗？此操作不可恢复！')) {
-    return
-  }
+function openClearDialog() {
+  showClearDialog.value = true
+}
 
+function closeClearDialog() {
+  showClearDialog.value = false
+}
+
+async function confirmClearHistory() {
+  showClearDialog.value = false
   try {
     await clearHistory()
-    alert('历史记录已清空')
     
     // 如果角色有greeting，重新添加
     if (character.value?.greeting) {
