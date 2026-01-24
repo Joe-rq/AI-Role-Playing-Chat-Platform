@@ -3,10 +3,9 @@ import { saveMessage, getHistory, deleteCharacterHistory } from '../services/api
 
 /**
  * 对话历史管理 Composable
- * 实现 localStorage 缓存 + 服务器同步的混合方案
+ * ✅ 修复：localStorage 改为按 sessionKey 存储，避免同一角色多会话冲突
  */
 export function useChatHistory(characterId) {
-    const storageKey = `chat_session_${characterId}`
     const sessionKey = ref(null)
     const messages = ref([])
     const isLoading = ref(false)
@@ -23,10 +22,18 @@ export function useChatHistory(characterId) {
     }
 
     /**
-     * 从 localStorage 加载缓存
+     * ✅ 获取当前会话的 storageKey
      */
-    function loadFromCache() {
+    function getStorageKey() {
+        return `chat_session_${sessionKey.value}`
+    }
+
+    /**
+     * ✅ 从 localStorage 加载指定 sessionKey 的缓存
+     */
+    function loadFromCache(sessionKeyToLoad) {
         try {
+            const storageKey = `chat_session_${sessionKeyToLoad}`
             const cached = localStorage.getItem(storageKey)
             if (cached) {
                 const data = JSON.parse(cached)
@@ -44,6 +51,8 @@ export function useChatHistory(characterId) {
      * 保存到 localStorage
      */
     function saveToCache() {
+        if (!sessionKey.value) return
+
         try {
             const data = {
                 sessionKey: sessionKey.value,
@@ -51,6 +60,7 @@ export function useChatHistory(characterId) {
                 messages: messages.value,
                 lastSync: Date.now(),
             }
+            const storageKey = getStorageKey()
             localStorage.setItem(storageKey, JSON.stringify(data))
         } catch (error) {
             console.error('保存本地缓存失败:', error)
@@ -90,13 +100,17 @@ export function useChatHistory(characterId) {
         // 如果外部传入sessionKey，则使用外部的
         if (externalSessionKey) {
             sessionKey.value = externalSessionKey
+            // ✅ 尝试从localStorage加载该会话的缓存
+            const hasCache = loadFromCache(externalSessionKey)
             // 直接从服务器加载该会话
             await syncFromServer()
         } else {
-            // 优先从缓存加载
-            const hasCache = loadFromCache()
-
-            if (!hasCache) {
+            // ✅ 查找该角色最近的会话（从localStorage中查找所有相关会话）
+            const recentSessionKey = findRecentSessionForCharacter()
+            if (recentSessionKey) {
+                sessionKey.value = recentSessionKey
+                loadFromCache(recentSessionKey)
+            } else {
                 // 没有缓存，生成新会话
                 sessionKey.value = generateSessionKey()
             }
@@ -106,6 +120,39 @@ export function useChatHistory(characterId) {
         }
 
         isLoading.value = false
+    }
+
+    /**
+     * ✅ 查找该角色最近的会话sessionKey
+     */
+    function findRecentSessionForCharacter() {
+        try {
+            // 遍历localStorage，找到所有该角色的会话
+            const allKeys = Object.keys(localStorage)
+            const sessionKeys = allKeys
+                .filter(key => key.startsWith('chat_session_'))
+                .map(key => {
+                    try {
+                        const data = JSON.parse(localStorage.getItem(key))
+                        if (data.characterId === characterId) {
+                            return {
+                                sessionKey: data.sessionKey,
+                                lastSync: data.lastSync || 0
+                            }
+                        }
+                    } catch (e) {
+                        return null
+                    }
+                    return null
+                })
+                .filter(item => item !== null)
+                .sort((a, b) => b.lastSync - a.lastSync) // 按最后同步时间倒序
+
+            return sessionKeys.length > 0 ? sessionKeys[0].sessionKey : null
+        } catch (error) {
+            console.error('查找最近会话失败:', error)
+            return null
+        }
     }
 
     /**
@@ -140,7 +187,10 @@ export function useChatHistory(characterId) {
      * 清空历史记录（前后端同步）
      */
     async function clearHistory() {
-        // 1. 调用后端删除接口
+        // 0. 保存当前sessionKey用于删除localStorage
+        const oldSessionKey = sessionKey.value
+
+        // 1. 调用后端删除接口（删除所有该角色的会话）
         try {
             await deleteCharacterHistory(characterId)
         } catch (error) {
@@ -150,12 +200,17 @@ export function useChatHistory(characterId) {
 
         // 2. 清空本地状态
         messages.value = []
+
+        // 3. ✅ 清除当前会话的localStorage
+        if (oldSessionKey) {
+            const oldStorageKey = `chat_session_${oldSessionKey}`
+            localStorage.removeItem(oldStorageKey)
+        }
+
+        // 4. 生成新会话
         sessionKey.value = generateSessionKey()
 
-        // 3. 清除localStorage
-        localStorage.removeItem(storageKey)
-
-        // 4. 保存新会话到缓存
+        // 5. 保存新会话到缓存
         saveToCache()
     }
 
