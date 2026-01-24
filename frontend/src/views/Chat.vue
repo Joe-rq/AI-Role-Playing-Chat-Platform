@@ -6,6 +6,7 @@
         <img :src="character.avatar || '/default-avatar.png'" :alt="character.name" />
         <span>{{ character.name }}</span>
       </div>
+      <button @click="toggleSessionSidebar" type="button" class="history-btn" title="历史会话">📋</button>
       <button @click="openClearDialog" type="button" class="clear-btn" title="清空历史">🗑️</button>
     </header>
 
@@ -95,6 +96,17 @@
       @confirm="confirmClearHistory"
       @cancel="closeClearDialog"
     />
+
+    <Drawer :visible="showSessionSidebar" @close="showSessionSidebar = false">
+      <SessionSidebar
+        :characterId="characterId"
+        :currentSessionKey="sessionKey"
+        :characterName="character?.name"
+        @switch-session="handleSwitchSession"
+        @new-session="handleNewSession"
+        @close="showSessionSidebar = false"
+      />
+    </Drawer>
   </div>
 </template>
 
@@ -102,6 +114,8 @@
 import { ref, onMounted, nextTick, watch } from 'vue'
 import { useRoute,useRouter } from 'vue-router'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
+import Drawer from '../components/Drawer.vue'
+import SessionSidebar from '../components/SessionSidebar.vue'
 import MarkdownIt from 'markdown-it'
 import hljs from 'highlight.js/lib/core'
 import javascript from 'highlight.js/lib/languages/javascript'
@@ -163,6 +177,7 @@ const uploadProgress = ref(0) // 上传进度
 const isUploading = ref(false) // 上传中状态
 let currentAbortController = null // AbortController 用于停止生成
 const showClearDialog = ref(false)
+const showSessionSidebar = ref(false)
 
 // 使用对话历史管理
 const characterId = parseInt(route.params.characterId)
@@ -389,6 +404,65 @@ function stopGeneration() {
   }
 }
 
+function toggleSessionSidebar() {
+  showSessionSidebar.value = !showSessionSidebar.value
+}
+
+async function handleSwitchSession(newSessionKey) {
+  if (newSessionKey === sessionKey.value) {
+    showSessionSidebar.value = false
+    return
+  }
+
+  // 更新URL query参数
+  router.replace({
+    path: route.path,
+    query: { sessionKey: newSessionKey }
+  })
+
+  // 重新初始化会话
+  await initHistory(newSessionKey)
+
+  // 关闭侧边栏
+  showSessionSidebar.value = false
+
+  // 滚动到底部
+  await scrollToBottom()
+}
+
+async function handleNewSession() {
+  // 生成新sessionKey
+  const newSessionKey = generateSessionKey()
+
+  // 清空消息
+  messages.value = []
+  sessionKey.value = newSessionKey
+
+  // 添加greeting
+  if (character.value?.greeting) {
+    addMessage('assistant', character.value.greeting)
+  }
+
+  // 更新URL
+  router.replace({
+    path: route.path,
+    query: { sessionKey: newSessionKey }
+  })
+
+  // 关闭侧边栏
+  showSessionSidebar.value = false
+
+  await scrollToBottom()
+}
+
+function generateSessionKey() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    const r = Math.random() * 16 | 0
+    const v = c === 'x' ? r : (r & 0x3 | 0x8)
+    return v.toString(16)
+  })
+}
+
 function openClearDialog() {
   showClearDialog.value = true
 }
@@ -458,6 +532,16 @@ async function confirmClearHistory() {
 .chat-header .clear-btn:hover {
   background: #fee;
   color: #d63031;
+}
+
+.chat-header .history-btn {
+  font-size: 1.2rem;
+  padding: 8px 12px;
+}
+
+.chat-header .history-btn:hover {
+  background: #e8f5e9;
+  color: #4caf50;
 }
 
 
