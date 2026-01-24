@@ -2,7 +2,10 @@
   <div class="home">
     <div class="header">
       <h1>选择角色</h1>
-      <button class="create-btn" @click="showCreateForm = true">+ 创建角色</button>
+      <div class="header-actions">
+        <button class="history-btn" @click="router.push('/sessions')">📜 历史记录</button>
+        <button class="create-btn" @click="showCreateForm = true">+ 创建角色</button>
+      </div>
     </div>
     <div class="character-list">
       <div
@@ -238,6 +241,26 @@ h1 {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(255, 100, 150, 0.4);
 }
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.history-btn {
+  background: #fff;
+  color: var(--text-primary);
+  padding: 12px 20px;
+  border: 1px solid #eee;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.history-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border-color: var(--primary-color);
+}
+
 
 /* Character Grid */
 .character-list {

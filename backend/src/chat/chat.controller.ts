@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Res, Param, HttpStatus, Delete } from '@nestjs/common';
+import { Controller, Post, Get, Body, Res, Param, HttpStatus, Delete, Query } from '@nestjs/common';
 import type { Response } from 'express';
 import { ChatService } from './chat.service';
 import { ChatRequestDto } from './dto/chat-request.dto';
@@ -63,5 +63,40 @@ export class ChatController {
     @Delete('sessions/character/:characterId')
     async clearCharacterHistory(@Param('characterId') characterId: string) {
         return this.chatService.clearCharacterHistory(+characterId);
+    }
+
+    /**
+     * 获取会话列表（支持分页和角色筛选）
+     * GET /chat/sessions?characterId=1&page=1&limit=20
+     */
+    @Get('sessions')
+    async getSessions(
+        @Query('characterId') characterId?: string,
+        @Query('page') page = '1',
+        @Query('limit') limit = '20',
+    ) {
+        return this.chatService.getSessions(
+            characterId ? +characterId : undefined,
+            +page,
+            +limit
+        );
+    }
+
+    /**
+     * 删除单个会话及其所有消息
+     * DELETE /chat/sessions/:sessionKey
+     */
+    @Delete('sessions/:sessionKey')
+    async deleteSession(@Param('sessionKey') sessionKey: string) {
+        return this.chatService.deleteSession(sessionKey);
+    }
+
+    /**
+     * 导出会话数据（JSON格式）
+     * GET /chat/sessions/:sessionKey/export
+     */
+    @Get('sessions/:sessionKey/export')
+    async exportSession(@Param('sessionKey') sessionKey: string) {
+        return this.chatService.exportSession(sessionKey);
     }
 }

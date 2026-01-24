@@ -6,9 +6,10 @@
         <img :src="character.avatar || '/default-avatar.png'" :alt="character.name" />
         <span>{{ character.name }}</span>
       </div>
+      <button @click="confirmClearHistory" class="clear-btn" title="清空历史">🗑️</button>
     </header>
 
-    <div class="messages-container" ref="messagesContainer">
+    <div class="messages-container" ref="messagesContainer" @scroll="handleScroll">
       <div
         v-for="(msg, index) in messages"
         :key="index"
@@ -23,6 +24,11 @@
         <div class="bubble typing">
           <span class="cursor">▌</span>
         </div>
+      </div>
+      
+      <!-- 新消息提示 -->
+      <div v-if="showNewMessageHint" class="new-message-hint" @click="scrollToBottomAndHide">
+        📩 新消息
       </div>
     </div>
 
@@ -62,12 +68,20 @@
           
           <div class="right-tools">
             <button 
+              v-if="isLoading" 
+              @click="stopGeneration" 
+              class="stop-btn"
+              title="停止生成"
+            >
+              ⬛
+            </button>
+            <button 
+              v-else
               @click="sendMessage" 
               class="send-btn"
-              :disabled="isLoading || (!inputText.trim() && !uploadedImageUrl)"
+              :disabled="!inputText.trim() && !uploadedImageUrl"
             >
-              <span v-if="isLoading" class="loader"></span>
-              <span v-else>➤</span>
+              ➤
             </button>
           </div>
         </div>
@@ -119,14 +133,18 @@ const previewImage = ref(null)
 const uploadedImageUrl = ref(null)
 const uploadProgress = ref(0) // 上传进度
 const isUploading = ref(false) // 上传中状态
+let currentAbortController = null // AbortController 用于停止生成
 
 // 使用对话历史管理
 const characterId = parseInt(route.params.characterId)
-const { messages, sessionKey, init: initHistory, addMessage, saveToCache } = useChatHistory(characterId)
+const { messages, sessionKey, init: initHistory, addMessage, saveToCache, clearHistory } = useChatHistory(characterId)
 
 onMounted(async () => {
+  // 从URL query参数获取sessionKey（如果是从会话列表跳转过来的）
+  const externalSessionKey = route.query.sessionKey || null
+  
   // 先初始化对话历史，避免因角色接口失败导致历史不加载
-  await initHistory()
+  await initHistory(externalSessionKey)
 
   try {
     character.value = await fetchCharacter(characterId)
@@ -142,10 +160,61 @@ onMounted(async () => {
   await scrollToBottom()
 })
 
+// 智能滚动相关状态
+const isUserAtBottom = ref(true) // 用户是否在底部
+const showNewMessageHint = ref(false) // 是否显示新消息提示
+let rafId = null // requestAnimationFrame ID
+
 // 监听messages变化，自动滚动
 watch(messages, async () => {
-  await scrollToBottom()
+  await smartScroll()
 }, { deep: true })
+
+// 检测用户是否在底部
+function checkIfAtBottom() {
+  const container = messagesContainer.value
+  if (!container) return true
+  
+  const threshold = 100 // 距离底部100px内视为"在底部"
+  const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight
+  
+  return distanceFromBottom < threshold
+}
+
+// 监听用户滚动
+function handleScroll() {
+  isUserAtBottom.value = checkIfAtBottom()
+  
+  // 如果回到底部，隐藏提示
+  if (isUserAtBottom.value) {
+    showNewMessageHint.value = false
+  }
+}
+
+// 智能滚动：仅当用户在底部时滚动
+async function smartScroll() {
+  if (isUserAtBottom.value) {
+    await scrollToBottom()
+  } else {
+    showNewMessageHint.value = true
+  }
+}
+
+// 节流滚动函数
+function scheduleScroll() {
+  if (rafId) return
+  rafId = requestAnimationFrame(async () => {
+    await smartScroll()
+    rafId = null
+  })
+}
+
+// 滚动到底部并隐藏提示
+async function scrollToBottomAndHide() {
+  showNewMessageHint.value = false
+  isUserAtBottom.value = true
+  await scrollToBottom()
+}
 
 function goBack() { router.push('/') }
 function renderMarkdown(content) { return md.render(content || '') }
@@ -234,6 +303,8 @@ async function sendMessage() {
   if(textarea) textarea.style.height = 'auto';
   clearImage()
   
+  // 创建 AbortController
+  currentAbortController = new AbortController()
   isLoading.value = true
 
   // 创建AI消息占位（不写入服务器，等流式完成再保存）
@@ -246,20 +317,28 @@ async function sendMessage() {
       character.value.id,
       userMessage,
       history,
-      userImage
+      userImage,
+      currentAbortController.signal // 传入 signal
     )) {
       fullResponse += chunk
       messages.value[aiMessageIndex].content = fullResponse
+      scheduleScroll() // 使用节流滚动
     }
   } catch (error) {
-    messages.value[aiMessageIndex].content = `错误: ${error.message}`
+    if (error.name === 'AbortError') {
+      // 用户主动停止
+      messages.value[aiMessageIndex].content += '\n\n_[已停止生成]_'
+    } else {
+      messages.value[aiMessageIndex].content = `错误: ${error.message}`
+    }
   } finally {
+    currentAbortController = null
     isLoading.value = false
     
     // ✅ 关键修复1：保存到localStorage
     saveToCache()
     
-    // ✅ 关键修复2：保存AI回复到服务器
+    // ✅ 关键修复2：保存AI回复到服务器（即使被中断也保存部分内容）
     const aiContent = messages.value[aiMessageIndex].content
     if (aiContent && aiContent.trim()) {
       saveMessage(sessionKey.value, characterId, 'assistant', aiContent, null)
@@ -267,6 +346,34 @@ async function sendMessage() {
     }
   }
 }
+
+function stopGeneration() {
+  if (currentAbortController) {
+    currentAbortController.abort()
+  }
+}
+
+async function confirmClearHistory() {
+  if (!confirm('确定要清空所有历史记录吗？此操作不可恢复！')) {
+    return
+  }
+
+  try {
+    await clearHistory()
+    alert('历史记录已清空')
+    
+    // 如果角色有greeting，重新添加
+    if (character.value?.greeting) {
+      addMessage('assistant', character.value.greeting)
+    }
+    
+    await scrollToBottom()
+  } catch (error) {
+    console.error('清空历史失败:', error)
+    alert('清空历史失败，请重试')
+  }
+}
+
 </script>
 
 <style scoped>
@@ -302,6 +409,18 @@ async function sendMessage() {
 
 .chat-header button:hover { background: #e4e6ea; color: var(--text-primary); }
 
+.chat-header .clear-btn {
+  margin-left: auto;
+  font-size: 1.2rem;
+  padding: 8px 12px;
+}
+
+.chat-header .clear-btn:hover {
+  background: #fee;
+  color: #d63031;
+}
+
+
 .character-info {
   display: flex;
   align-items: center;
@@ -324,7 +443,43 @@ async function sendMessage() {
   padding: 24px;
   padding-bottom: 40px;
   scroll-behavior: smooth;
+  position: relative;
 }
+
+.new-message-hint {
+  position: fixed;
+  bottom: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  padding: 10px 20px;
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  z-index: 100;
+  animation: slideUp 0.3s ease;
+  transition: all 0.2s;
+}
+
+.new-message-hint:hover {
+  transform: translateX(-50%) scale(1.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    bottom: 100px;
+  }
+  to {
+    opacity: 1;
+    bottom: 120px;
+  }
+}
+
 
 .message { display: flex; margin-bottom: 24px; animation: fadeIn 0.3s ease; }
 .message.user { justify-content: flex-end; }
@@ -482,6 +637,31 @@ async function sendMessage() {
   cursor: not-allowed;
   color: #9ca3af;
 }
+
+.stop-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #ff4757;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+  animation: pulse 1.5s infinite;
+}
+
+.stop-btn:hover {
+  background: #ee3344;
+  transform: scale(1.05);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
 
 /* Image Preview */
 .image-preview {

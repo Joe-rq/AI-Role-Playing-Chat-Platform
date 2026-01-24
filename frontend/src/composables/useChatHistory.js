@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { saveMessage, getHistory } from '../services/api'
+import { saveMessage, getHistory, deleteCharacterHistory } from '../services/api'
 
 /**
  * 对话历史管理 Composable
@@ -82,20 +82,28 @@ export function useChatHistory(characterId) {
 
     /**
      * 初始化：先加载缓存，再从服务器同步
+     * @param {string} externalSessionKey - 外部传入的sessionKey（如从会话列表跳转）
      */
-    async function init() {
+    async function init(externalSessionKey = null) {
         isLoading.value = true
 
-        // 优先从缓存加载
-        const hasCache = loadFromCache()
+        // 如果外部传入sessionKey，则使用外部的
+        if (externalSessionKey) {
+            sessionKey.value = externalSessionKey
+            // 直接从服务器加载该会话
+            await syncFromServer()
+        } else {
+            // 优先从缓存加载
+            const hasCache = loadFromCache()
 
-        if (!hasCache) {
-            // 没有缓存，生成新会话
-            sessionKey.value = generateSessionKey()
+            if (!hasCache) {
+                // 没有缓存，生成新会话
+                sessionKey.value = generateSessionKey()
+            }
+
+            // 后台同步服务器数据
+            await syncFromServer()
         }
-
-        // 后台同步服务器数据
-        await syncFromServer()
 
         isLoading.value = false
     }
@@ -129,11 +137,25 @@ export function useChatHistory(characterId) {
     }
 
     /**
-     * 清空历史记录
+     * 清空历史记录（前后端同步）
      */
-    function clearHistory() {
+    async function clearHistory() {
+        // 1. 调用后端删除接口
+        try {
+            await deleteCharacterHistory(characterId)
+        } catch (error) {
+            console.error('后端清空失败:', error)
+            // 继续执行前端清理
+        }
+
+        // 2. 清空本地状态
         messages.value = []
         sessionKey.value = generateSessionKey()
+
+        // 3. 清除localStorage
+        localStorage.removeItem(storageKey)
+
+        // 4. 保存新会话到缓存
         saveToCache()
     }
 

@@ -62,7 +62,7 @@ export async function uploadImage(file) {
 }
 
 // 流式对话 (SSE)
-export async function* streamChat(characterId, message, history = [], imageUrl = null) {
+export async function* streamChat(characterId, message, history = [], imageUrl = null, signal = null) {
     const payload = {
         characterId,
         message,
@@ -74,6 +74,7 @@ export async function* streamChat(characterId, message, history = [], imageUrl =
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        signal, // 传入 AbortSignal
     })
 
     const reader = res.body.getReader()
@@ -121,4 +122,37 @@ export async function saveMessage(sessionKey, characterId, role, content, imageU
 export async function getHistory(sessionKey) {
     const res = await fetch(`${API_BASE}/chat/sessions/${sessionKey}/messages`)
     return res.json()
+}
+
+// 删除单个会话
+export async function deleteSession(sessionKey) {
+    const res = await fetch(`${API_BASE}/chat/sessions/${sessionKey}`, {
+        method: 'DELETE',
+    })
+    return res.json()
+}
+
+// 获取会话列表
+export async function getSessions(characterId, page = 1, limit = 20) {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) })
+    if (characterId) params.append('characterId', String(characterId))
+    const res = await fetch(`${API_BASE}/chat/sessions?${params}`)
+    return res.json()
+}
+
+// 导出会话数据
+export async function exportSession(sessionKey) {
+    const res = await fetch(`${API_BASE}/chat/sessions/${sessionKey}/export`)
+    const data = await res.json()
+
+    // 下载为JSON文件
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `session-${sessionKey}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+
+    return data
 }

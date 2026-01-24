@@ -150,6 +150,10 @@ export class ChatService {
 
         const savedMessage = await this.messageRepository.save(message);
 
+        // ✅ 更新session的updatedAt时间戳，确保会话列表排序正确
+        session.updatedAt = new Date();
+        await this.sessionRepository.save(session);
+
         return {
             messageId: savedMessage.id,
             sessionId: session.id,
@@ -217,5 +221,86 @@ export class ChatService {
             deletedSessions: deleteSessionsResult.affected || 0,
             deletedMessages: deleteMessagesResult.affected || 0,
         };
+    }
+
+    /**
+     * 获取会话列表（支持分页）
+     */
+    async getSessions(characterId?: number, page = 1, limit = 20) {
+        // ✅ 修复1：分离查询，避免 leftJoin 造成的分页失真
+        // 先查询符合条件的 sessions（不加载 messages）
+        const queryBuilder = this.sessionRepository
+            .createQueryBuilder('session')
+            .leftJoinAndSelect('session.character', 'character')
+            .orderBy('session.updatedAt', 'DESC')
+            .skip((page - 1) * limit)
+            .take(limit);
+
+        if (characterId) {
+            queryBuilder.where('session.characterId = :characterId', { characterId });
+        }
+
+        const [sessions, total] = await queryBuilder.getManyAndCount();
+
+        // ✅ 修复2：单独查询每个 session 的最后一条消息
+        const sessionsWithDetails = await Promise.all(
+            sessions.map(async (session) => {
+                // 查询该会话的消息数量
+                const messageCount = await this.messageRepository.count({
+                    where: { sessionId: session.id }
+                });
+
+                // ✅ 修复3：查询最后一条消息（按创建时间倒序取第一条）
+                const lastMessage = await this.messageRepository.findOne({
+                    where: { sessionId: session.id },
+                    order: { createdAt: 'DESC' }
+                });
+
+                return {
+                    sessionKey: session.sessionKey,
+                    characterId: session.characterId,
+                    characterName: session.character?.name || 'Unknown',
+                    characterAvatar: session.character?.avatar || '',
+                    messageCount: messageCount,
+                    lastMessage: lastMessage?.content?.slice(0, 50) || '',
+                    updatedAt: session.updatedAt,
+                };
+            })
+        );
+
+        return {
+            sessions: sessionsWithDetails,
+            total,
+            page,
+            limit,
+        };
+    }
+
+    /**
+     * 删除单个会话及其所有消息
+     */
+    async deleteSession(sessionKey: string) {
+        const session = await this.sessionRepository.findOne({ where: { sessionKey } });
+
+        if (!session) {
+            this.logger.warn(`会话不存在: ${sessionKey}`);
+            return { success: false, message: '会话不存在' };
+        }
+
+        // 删除关联消息
+        await this.messageRepository.delete({ sessionId: session.id });
+
+        // 删除会话
+        await this.sessionRepository.delete({ id: session.id });
+
+        this.logger.log(`已删除会话: ${sessionKey}`);
+        return { success: true };
+    }
+
+    /**
+     * 导出会话数据
+     */
+    async exportSession(sessionKey: string) {
+        return await this.getHistory(sessionKey);
     }
 }
