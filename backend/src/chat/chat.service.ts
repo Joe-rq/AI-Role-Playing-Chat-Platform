@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
@@ -8,6 +8,7 @@ import { SaveMessageDto } from './dto/save-message.dto';
 import { CharactersService } from '../characters/characters.service';
 import { Session } from './entities/session.entity';
 import { Message } from './entities/message.entity';
+import { ModelsService } from '../models/models.service';
 
 @Injectable()
 export class ChatService {
@@ -17,15 +18,13 @@ export class ChatService {
     constructor(
         private readonly configService: ConfigService,
         private readonly charactersService: CharactersService,
+        private readonly modelsService: ModelsService,
         @InjectRepository(Session)
         private readonly sessionRepository: Repository<Session>,
         @InjectRepository(Message)
         private readonly messageRepository: Repository<Message>,
     ) {
-        this.openai = new OpenAI({
-            apiKey: this.configService.get<string>('OPENAI_API_KEY') || 'your-api-key',
-            baseURL: this.configService.get<string>('OPENAI_BASE_URL') || 'https://api.openai.com/v1',
-        });
+        // 移除固定的OpenAI实例，改为每次请求时动态创建
     }
 
     async *streamChat(chatRequest: ChatRequestDto): AsyncGenerator<string> {
@@ -102,16 +101,44 @@ export class ChatService {
         // 日志：记录最终发送的消息数量
         this.logger.log(`LLM请求 - 总消息数: ${messages.length} (system: 1, history: ${messages.length - 2}, current: 1)`);
 
-        // ✅ 使用角色配置的模型和参数
-        const model = character.preferredModel || this.configService.get<string>('OPENAI_MODEL') || 'gpt-4o-mini';
-        const temperature = character.temperature ?? 0.7;
-        const maxTokens = character.maxTokens ?? 2000;
+        // ✅ 从数据库获取模型配置
+        const modelId = character.preferredModel || this.configService.get<string>('OPENAI_MODEL') || 'gpt-4o-mini';
+        const modelConfig = await this.modelsService.findByModelId(modelId);
 
-        this.logger.log(`模型配置 - model: ${model}, temperature: ${temperature}, maxTokens: ${maxTokens}`);
+        if (!modelConfig) {
+            // Fallback: 使用环境变量配置
+            this.logger.warn(`模型配置不存在: ${modelId}，使用环境变量fallback`);
+            const fallbackApiKey = this.configService.get<string>('OPENAI_API_KEY');
+            const fallbackBaseURL = this.configService.get<string>('OPENAI_BASE_URL');
+
+            if (!fallbackApiKey || !fallbackBaseURL) {
+                throw new BadRequestException(`模型 "${modelId}" 未配置，且环境变量fallback不可用`);
+            }
+
+            this.openai = new OpenAI({
+                apiKey: fallbackApiKey,
+                baseURL: fallbackBaseURL,
+            });
+        } else if (!modelConfig.isEnabled) {
+            throw new BadRequestException(`模型 "${modelId}" 已被禁用`);
+        } else {
+            // 使用数据库配置创建OpenAI实例
+            const decryptedApiKey = this.modelsService.getDecryptedApiKey(modelConfig);
+            this.openai = new OpenAI({
+                apiKey: decryptedApiKey,
+                baseURL: modelConfig.baseURL,
+            });
+        }
+
+        // ✅ 使用角色配置的模型和参数
+        const temperature = character.temperature ?? modelConfig?.defaultTemperature ?? 0.7;
+        const maxTokens = character.maxTokens ?? modelConfig?.defaultMaxTokens ?? 2000;
+
+        this.logger.log(`模型配置 - model: ${modelId}, temperature: ${temperature}, maxTokens: ${maxTokens}`);
 
         // 调用 LLM API (流式) - 启用 Token 统计
         const stream = await this.openai.chat.completions.create({
-            model: model,
+            model: modelId,
             messages,
             stream: true,
             temperature: temperature,

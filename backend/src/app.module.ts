@@ -10,16 +10,21 @@ import { Session } from './chat/entities/session.entity';
 import { Message } from './chat/entities/message.entity';
 import { ChatModule } from './chat/chat.module';
 import { UploadModule } from './upload/upload.module';
+import { ModelsModule } from './models/models.module';
+import { Model } from './models/entities/model.entity';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema: Joi.object({
-        // OpenAI 配置（必填）
-        OPENAI_API_KEY: Joi.string().required(),
-        OPENAI_BASE_URL: Joi.string().uri().required(),
-        OPENAI_MODEL: Joi.string().required(),
+        // 加密密钥（必填）- 用于加密API Key
+        ENCRYPTION_KEY: Joi.string().length(64).required(),
+
+        // OpenAI 配置（可选，作为fallback）
+        OPENAI_API_KEY: Joi.string().optional(),
+        OPENAI_BASE_URL: Joi.string().uri().optional(),
+        OPENAI_MODEL: Joi.string().optional(),
 
         // 数据库配置
         DATABASE_PATH: Joi.string().default('database.sqlite'),
@@ -41,12 +46,13 @@ import { UploadModule } from './upload/upload.module';
     TypeOrmModule.forRoot({
       type: 'sqlite',
       database: process.env.DATABASE_PATH || 'database.sqlite',
-      entities: [Character, Session, Message],
+      entities: [Character, Session, Message, Model],
       synchronize: true, // 开发阶段自动同步
     }),
     CharactersModule,
     ChatModule,
     UploadModule,
+    ModelsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

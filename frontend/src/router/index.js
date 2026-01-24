@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Home from '../views/Home.vue'
 import Chat from '../views/Chat.vue'
 import SessionList from '../views/SessionList.vue'
+import ModelManagement from '../views/ModelManagement.vue'
 
 const routes = [
     {
@@ -18,6 +19,11 @@ const routes = [
         path: '/sessions',
         name: 'Sessions',
         component: SessionList,
+    },
+    {
+        path: '/models',
+        name: 'ModelManagement',
+        component: ModelManagement,
     },
 ]
 

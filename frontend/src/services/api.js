@@ -162,3 +162,60 @@ export async function getAvailableModels() {
     const res = await fetch(`${API_BASE}/chat/models`)
     return res.json()
 }
+
+// ========== 模型管理 API ==========
+
+// 获取所有模型配置
+export async function getModels() {
+    const res = await fetch(`${API_BASE}/models`)
+    if (!res.ok) throw new Error('获取模型列表失败')
+    return res.json()
+}
+
+// 获取已启用的模型（用于角色选择）
+export async function getEnabledModels() {
+    const res = await fetch(`${API_BASE}/models/enabled`)
+    if (!res.ok) throw new Error('获取已启用模型失败')
+    return res.json()
+}
+
+// 创建模型配置
+export async function createModel(data) {
+    const res = await fetch(`${API_BASE}/models`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    })
+    if (!res.ok) {
+        const error = await res.json().catch(() => ({ message: '创建模型失败' }))
+        throw new Error(error.message || '创建模型失败')
+    }
+    return res.json()
+}
+
+// 更新模型配置
+export async function updateModel(id, data) {
+    const res = await fetch(`${API_BASE}/models/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    })
+    if (!res.ok) {
+        const error = await res.json().catch(() => ({ message: '更新模型失败' }))
+        throw new Error(error.message || '更新模型失败')
+    }
+    return res.json()
+}
+
+// 删除模型配置
+export async function deleteModel(id) {
+    const res = await fetch(`${API_BASE}/models/${id}`, {
+        method: 'DELETE',
+    })
+    if (!res.ok) {
+        const error = await res.json().catch(() => ({ message: '删除模型失败' }))
+        throw new Error(error.message || '删除模型失败')
+    }
+    return res.json()
+}
+

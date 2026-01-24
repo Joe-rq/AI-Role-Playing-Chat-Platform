@@ -3,6 +3,7 @@
     <div class="header">
       <h1>选择角色</h1>
       <div class="header-actions">
+        <button class="models-btn" @click="router.push('/models')">⚙️ 模型管理</button>
         <button class="history-btn" @click="router.push('/sessions')">📜 历史记录</button>
         <button class="create-btn" @click="showCreateForm = true">+ 创建角色</button>
       </div>
@@ -70,8 +71,8 @@
           首选模型:
           <select v-model="newCharacter.preferredModel">
             <option value="">使用默认模型</option>
-            <option v-for="model in availableModels" :key="model.id" :value="model.id">
-              {{ model.name }} - {{ model.description }}
+            <option v-for="model in availableModels" :key="model.id" :value="model.modelId">
+              {{ model.name }}
             </option>
           </select>
         </label>
@@ -110,7 +111,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { fetchCharacters, createCharacter, updateCharacter, deleteCharacter, deleteCharacterHistory, getAvailableModels } from '../services/api'
+import { fetchCharacters, createCharacter, updateCharacter, deleteCharacter, deleteCharacterHistory, getEnabledModels } from '../services/api'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
 import TagsInput from '../components/TagsInput.vue'
 import ExampleDialogues from '../components/ExampleDialogues.vue'
@@ -140,11 +141,10 @@ const characterToDelete = ref(null)
 
 onMounted(async () => {
   characters.value = await fetchCharacters()
-  
-  // 加载可用模型列表
+
+  // 加载已启用的模型列表
   try {
-    const modelData = await getAvailableModels()
-    availableModels.value = modelData.models || []
+    availableModels.value = await getEnabledModels()
   } catch (error) {
     console.error('加载模型列表失败:', error)
   }
@@ -329,7 +329,8 @@ h1 {
   gap: 12px;
 }
 
-.history-btn {
+.history-btn,
+.models-btn {
   background: #fff;
   color: var(--text-primary);
   padding: 12px 20px;
@@ -337,7 +338,8 @@ h1 {
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
-.history-btn:hover {
+.history-btn:hover,
+.models-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   border-color: var(--primary-color);
