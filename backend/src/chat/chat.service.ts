@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
@@ -11,6 +11,7 @@ import { Message } from './entities/message.entity';
 
 @Injectable()
 export class ChatService {
+    private readonly logger = new Logger(ChatService.name);
     private openai: OpenAI;
 
     constructor(
@@ -49,7 +50,7 @@ export class ChatService {
 
             // 日志记录截断情况
             if (originalLength > maxMessages) {
-                console.log(`[上下文窗口] 截断历史消息: ${originalLength} -> ${truncatedHistory.length} (保留最近${maxTurns}轮)`);
+                this.logger.log(`上下文窗口截断: ${originalLength} -> ${truncatedHistory.length} (保留最近${maxTurns}轮)`);
             }
 
             for (const msg of truncatedHistory) {
@@ -78,20 +79,47 @@ export class ChatService {
         }
 
         // 日志：记录最终发送的消息数量
-        console.log(`[LLM请求] 总消息数: ${messages.length} (system: 1, history: ${messages.length - 2}, current: 1)`);
+        this.logger.log(`LLM请求 - 总消息数: ${messages.length} (system: 1, history: ${messages.length - 2}, current: 1)`);
 
-        // 调用 LLM API (流式)
+        // 调用 LLM API (流式) - 启用 Token 统计
         const stream = await this.openai.chat.completions.create({
             model: this.configService.get<string>('OPENAI_MODEL') || 'gpt-4o-mini',
             messages,
             stream: true,
+            stream_options: { include_usage: true }, // 启用 Token 统计
         });
+
+        let totalTokens = 0;
+        let promptTokens = 0;
+        let completionTokens = 0;
+        let responseText = ''; // 用于回退估算
 
         for await (const chunk of stream) {
             const content = chunk.choices[0]?.delta?.content;
             if (content) {
+                responseText += content;
                 yield content;
             }
+
+            // 收集 Token 统计信息（通常在最后一个 chunk）
+            if (chunk.usage) {
+                promptTokens = chunk.usage.prompt_tokens || 0;
+                completionTokens = chunk.usage.completion_tokens || 0;
+                totalTokens = chunk.usage.total_tokens || 0;
+            }
+        }
+
+        // 记录 Token 消耗
+        if (totalTokens > 0) {
+            this.logger.log(`Token统计 - Prompt: ${promptTokens}, Completion: ${completionTokens}, Total: ${totalTokens}`);
+        } else {
+            // 回退：使用简单估算（粗略：1 token ≈ 4 字符）
+            const estimatedPromptTokens = Math.ceil(JSON.stringify(messages).length / 4);
+            const estimatedCompletionTokens = Math.ceil(responseText.length / 4);
+            const estimatedTotal = estimatedPromptTokens + estimatedCompletionTokens;
+            this.logger.warn(
+                `Token统计不可用，使用估算 - Prompt: ~${estimatedPromptTokens}, Completion: ~${estimatedCompletionTokens}, Total: ~${estimatedTotal}`
+            );
         }
     }
 

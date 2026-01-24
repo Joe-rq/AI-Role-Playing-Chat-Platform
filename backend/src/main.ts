@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { AppModule } from './app.module';
@@ -50,6 +50,9 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
-  console.log(`🚀 Backend running at http://localhost:${port}`);
+
+  // 使用 NestJS Logger 输出启动信息
+  const logger = new (await import('@nestjs/common')).Logger('Bootstrap');
+  logger.log(`🚀 Backend running at http://localhost:${port}`);
 }
 bootstrap();

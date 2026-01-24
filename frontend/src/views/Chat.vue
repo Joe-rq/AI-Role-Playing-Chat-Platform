@@ -31,6 +31,13 @@
       <div v-if="previewImage" class="image-preview">
         <img :src="previewImage" />
         <button @click="clearImage" class="close-btn">✕</button>
+        <!-- 上传进度条 -->
+        <div v-if="isUploading" class="upload-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" :style="{ width: uploadProgress + '%' }"></div>
+          </div>
+          <span class="progress-text">{{ uploadProgress }}%</span>
+        </div>
       </div>
 
       <!-- Main Input Card -->
@@ -71,14 +78,38 @@
 
 <script setup>
 import { ref, onMounted, nextTick, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute,useRouter } from 'vue-router'
 import MarkdownIt from 'markdown-it'
+import hljs from 'highlight.js/lib/core'
+import javascript from 'highlight.js/lib/languages/javascript'
+import python from 'highlight.js/lib/languages/python'
+import typescript from 'highlight.js/lib/languages/typescript'
+import 'highlight.js/styles/github-dark.css' // 代码高亮样式
+import Compressor from 'compressorjs'
 import { fetchCharacter, streamChat, uploadImage, saveMessage } from '../services/api'
 import { useChatHistory } from '../composables/useChatHistory'
 
+// 注册常用语言
+hljs.registerLanguage('javascript', javascript)
+hljs.registerLanguage('python', python)
+hljs.registerLanguage('typescript', typescript)
+
 const route = useRoute()
 const router = useRouter()
-const md = new MarkdownIt()
+
+// 配置 Markdown-it 支持代码高亮
+const md = new MarkdownIt({
+  highlight: function (str, lang) {
+    if (lang && hljs.getLanguage(lang)) {
+      try {
+        return '<pre class="hljs"><code>' +
+               hljs.highlight(str, { language: lang, ignoreIllegals: true }).value +
+               '</code></pre>'
+      } catch (__) {}
+    }
+    return '<pre class="hljs"><code>' + md.utils.escapeHtml(str) + '</code></pre>'
+  }
+})
 
 const character = ref(null)
 const inputText = ref('')
@@ -86,6 +117,8 @@ const isLoading = ref(false)
 const messagesContainer = ref(null)
 const previewImage = ref(null)
 const uploadedImageUrl = ref(null)
+const uploadProgress = ref(0) // 上传进度
+const isUploading = ref(false) // 上传中状态
 
 // 使用对话历史管理
 const characterId = parseInt(route.params.characterId)
@@ -127,14 +160,51 @@ async function scrollToBottom() {
 async function handleImageSelect(event) {
   const file = event.target.files[0]
   if (!file) return
+  
+  // 立即显示预览
   previewImage.value = URL.createObjectURL(file)
-  const result = await uploadImage(file)
-  uploadedImageUrl.value = result.url
+  isUploading.value = true
+  uploadProgress.value = 0
+  
+  try {
+    // 使用 Compressor.js 压缩图片
+    const compressedFile = await new Promise((resolve, reject) => {
+      new Compressor(file, {
+        quality: 0.8, // 压缩质量
+        maxWidth: 1024, // 最大宽度
+        maxHeight: 1024, // 最大高度
+        mimeType: 'image/jpeg', // 统一转为 JPEG
+        success: resolve,
+        error: reject,
+      })
+    })
+    
+    // 模拟上传进度（因为 uploadImage 是 fetch，不支持进度回调）
+    const progressInterval = setInterval(() => {
+      if (uploadProgress.value < 90) {
+        uploadProgress.value += 10
+      }
+    }, 100)
+    
+    const result = await uploadImage(compressedFile)
+    clearInterval(progressInterval)
+    uploadProgress.value = 100
+    
+    uploadedImageUrl.value = result.url
+  } catch (error) {
+    console.error('图片压缩或上传失败:', error)
+    alert('图片上传失败，请重试')
+    clearImage()
+  } finally {
+    isUploading.value = false
+  }
 }
 
 function clearImage() {
   previewImage.value = null
   uploadedImageUrl.value = null
+  uploadProgress.value = 0
+  isUploading.value = false
 }
 
 function autoResize(event) {
@@ -289,6 +359,30 @@ async function sendMessage() {
   margin-top: 8px;
 }
 
+/* 代码块样式 */
+.bubble :deep(pre) {
+  margin: 12px 0;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+.bubble :deep(code) {
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+  font-size: 0.9em;
+}
+
+.bubble :deep(pre code) {
+  display: block;
+  padding: 0;
+}
+
+.bubble :deep(:not(pre) > code) {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #d63384;
+}
+
 /* Input Area Redesign */
 .input-area {
   padding: 24px;
@@ -421,6 +515,34 @@ async function sendMessage() {
   align-items: center;
   justify-content: center;
   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* 上传进度条 */
+.upload-progress {
+  margin-top: 8px;
+  width: 100%;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  display: block;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
 }
 
 /* Animations */
