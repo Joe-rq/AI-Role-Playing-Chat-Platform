@@ -17,6 +17,8 @@ export enum ErrorCode {
     SESSION_NOT_FOUND = 4002,
     CHARACTER_HAS_SESSIONS = 4003, // 角色有对话记录，不能删除
     INVALID_INPUT = 4004,
+    MODEL_NOT_FOUND = 4005,
+    MODEL_DISABLED = 4006,
 
     // ========== 5xx 服务器错误 ==========
     INTERNAL_SERVER_ERROR = 500,
@@ -40,6 +42,8 @@ export const ErrorMessage: Record<ErrorCode, string> = {
     [ErrorCode.SESSION_NOT_FOUND]: '会话不存在',
     [ErrorCode.CHARACTER_HAS_SESSIONS]: '该角色已有对话记录，无法删除',
     [ErrorCode.INVALID_INPUT]: '输入数据无效',
+    [ErrorCode.MODEL_NOT_FOUND]: '模型不存在',
+    [ErrorCode.MODEL_DISABLED]: '模型已被禁用',
 
     [ErrorCode.INTERNAL_SERVER_ERROR]: '服务器内部错误',
     [ErrorCode.LLM_API_ERROR]: 'AI 服务调用失败',

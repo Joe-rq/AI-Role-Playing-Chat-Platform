@@ -161,7 +161,7 @@ export class ModelsService {
       const decryptedApiKey = decrypt(model.apiKey);
 
       // 动态导入OpenAI SDK
-      const OpenAI = (await import('openai')).default;
+      const { default: OpenAI } = await import('openai');
       const openai = new OpenAI({
         apiKey: decryptedApiKey,
         baseURL: model.baseURL,
