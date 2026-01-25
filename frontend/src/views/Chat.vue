@@ -3,7 +3,7 @@
     <header class="chat-header">
       <button @click="goBack" type="button">返回</button>
       <div class="character-info" v-if="character">
-        <img :src="character.avatar || '/default-avatar.png'" :alt="character.name" />
+        <img :src="character.avatar || `https://api.dicebear.com/7.x/notionists/svg?seed=${character.name}`" :alt="character.name" />
         <span>{{ character.name }}</span>
       </div>
       <button @click="toggleSessionSidebar" type="button" class="history-btn" title="历史会话">📋</button>
@@ -51,7 +51,9 @@
       <div class="input-card">
         <textarea
           v-model="inputText"
-          @keydown.enter.prevent="sendMessage"
+          @keydown="handleKeyDown"
+          @compositionstart="handleCompositionStart"
+          @compositionend="handleCompositionEnd"
           placeholder="有问题，尽管问..."
           :disabled="isLoading"
           class="chat-textarea"
@@ -172,6 +174,7 @@ const md = new MarkdownIt({
 const character = ref(null)
 const inputText = ref('')
 const isLoading = ref(false)
+const isComposing = ref(false) // 跟踪输入法composition状态
 const messagesContainer = ref(null)
 const previewImage = ref(null)
 const uploadedImageUrl = ref(null)
@@ -326,6 +329,27 @@ function autoResize(event) {
   const textarea = event.target;
   textarea.style.height = 'auto';
   textarea.style.height = textarea.scrollHeight + 'px';
+}
+
+// 处理输入法composition事件
+function handleCompositionStart() {
+  isComposing.value = true
+}
+
+function handleCompositionEnd() {
+  isComposing.value = false
+}
+
+// 处理回车键发送
+function handleKeyDown(event) {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    // 如果正在使用输入法，不发送消息
+    if (isComposing.value) {
+      return
+    }
+    event.preventDefault()
+    sendMessage()
+  }
 }
 
 async function sendMessage() {

@@ -20,7 +20,7 @@
           @click="goToSession(session)"
         >
           <div class="session-avatar">
-            <img :src="session.characterAvatar || '/default-avatar.png'" :alt="session.characterName" />
+            <img :src="session.characterAvatar || `https://api.dicebear.com/7.x/notionists/svg?seed=${session.characterName}`" :alt="session.characterName" />
           </div>
           
           <div class="session-info">

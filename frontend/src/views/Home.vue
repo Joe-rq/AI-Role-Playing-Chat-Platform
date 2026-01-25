@@ -4,7 +4,6 @@
       <h1>选择角色</h1>
       <div class="header-actions">
         <button class="models-btn" @click="router.push('/models')">⚙️ 模型管理</button>
-        <button class="history-btn" @click="router.push('/sessions')">📜 历史记录</button>
         <button class="create-btn" @click="showCreateForm = true">+ 创建角色</button>
       </div>
     </div>
@@ -15,7 +14,7 @@
         class="character-card"
         @click="startChat(character.id)"
       >
-        <img :src="character.avatar || '/default-avatar.png'" :alt="character.name" />
+        <img :src="character.avatar || `https://api.dicebear.com/7.x/notionists/svg?seed=${character.name}`" :alt="character.name" />
         <div class="info">
           <h3>{{ character.name }}</h3>
           <p>{{ character.description }}</p>
@@ -66,7 +65,11 @@
         <div class="form-field">
           <label class="field-label">头像URL（可选）</label>
           <input v-model="newCharacter.avatar" placeholder="例如：https://example.com/avatar.png" />
-          <span class="field-hint">留空将使用默认头像</span>
+          <span class="field-hint">
+            留空将根据名称自动生成。您可以去 
+            <a href="https://www.dicebear.com/styles/" target="_blank" class="hint-link">DiceBear</a> 
+            挑选喜欢的风格并复制链接。
+          </span>
         </div>
 
         <!-- Tags 输入 -->
@@ -396,7 +399,6 @@ h1 {
   gap: 12px;
 }
 
-.history-btn,
 .models-btn {
   background: #fff;
   color: var(--text-primary);
@@ -405,7 +407,6 @@ h1 {
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
-.history-btn:hover,
 .models-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
@@ -735,6 +736,18 @@ button:hover {
   font-size: 0.85rem;
   color: var(--text-secondary);
   line-height: 1.5;
+}
+
+.hint-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.hint-link:hover {
+  color: var(--secondary-color);
+  text-decoration: underline;
 }
 
 .model-config {
