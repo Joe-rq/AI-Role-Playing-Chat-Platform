@@ -525,67 +525,76 @@ async function confirmClearHistory() {
   background: var(--bg-color);
   max-width: 900px;
   margin: 0 auto;
-  box-shadow: 0 0 50px rgba(0,0,0,0.05);
+  box-shadow: 0 0 50px rgba(0,0,0,0.02);
 }
 
 .chat-header {
   padding: 16px 24px;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(0,0,0,0.05);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0,0,0,0.03);
   display: flex;
   align-items: center;
   gap: 16px;
   z-index: 10;
+  position: sticky;
+  top: 0;
 }
 
 .chat-header button {
   color: var(--text-secondary);
-  font-weight: 500;
+  font-weight: 600;
   padding: 8px 16px;
-  border-radius: var(--radius-full);
-  background: #f0f2f5;
-  transition: var(--transition);
+  border-radius: 12px;
+  background: transparent;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
 }
 
-.chat-header button:hover { background: #e4e6ea; color: var(--text-primary); }
+.chat-header button:hover {
+  background: #f4f5f7;
+  color: var(--text-primary);
+}
 
 .chat-header .clear-btn {
   margin-left: auto;
-  font-size: 1.2rem;
-  padding: 8px 12px;
+  font-size: 1.1rem;
+  padding: 8px;
+  border-radius: 10px;
 }
 
 .chat-header .clear-btn:hover {
-  background: #fee;
-  color: #d63031;
+  background: rgba(255, 71, 87, 0.1);
+  color: #ff4757;
 }
 
 .chat-header .history-btn {
-  font-size: 1.2rem;
-  padding: 8px 12px;
+  font-size: 1.1rem;
+  padding: 8px;
+  border-radius: 10px;
 }
 
 .chat-header .history-btn:hover {
-  background: #e8f5e9;
-  color: #4caf50;
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
 }
-
 
 .character-info {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-primary);
   font-size: 1.1rem;
 }
 
 .character-info img {
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   object-fit: cover;
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
 .messages-container {
@@ -595,42 +604,45 @@ async function confirmClearHistory() {
   padding-bottom: 40px;
   scroll-behavior: smooth;
   position: relative;
+  background: var(--bg-color);
 }
 
 .new-message-hint {
   position: fixed;
-  bottom: 120px;
+  bottom: 140px;
   left: 50%;
   transform: translateX(-50%);
   background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
   color: white;
-  padding: 10px 20px;
-  border-radius: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 10px 24px;
+  border-radius: 24px;
+  box-shadow: 0 8px 20px rgba(100, 100, 255, 0.25);
   cursor: pointer;
   font-size: 0.9rem;
-  font-weight: 500;
+  font-weight: 600;
   z-index: 100;
-  animation: slideUp 0.3s ease;
+  animation: slideUp 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .new-message-hint:hover {
-  transform: translateX(-50%) scale(1.05);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  transform: translateX(-50%) translateY(-2px);
+  box-shadow: 0 10px 24px rgba(100, 100, 255, 0.35);
 }
 
 @keyframes slideUp {
   from {
     opacity: 0;
-    bottom: 100px;
+    transform: translateX(-50%) translateY(20px);
   }
   to {
     opacity: 1;
-    bottom: 120px;
+    transform: translateX(-50%) translateY(0);
   }
 }
-
 
 .message { display: flex; margin-bottom: 24px; animation: fadeIn 0.3s ease; }
 .message.user { justify-content: flex-end; }
@@ -643,32 +655,35 @@ async function confirmClearHistory() {
   font-size: 1rem;
   line-height: 1.6;
   position: relative;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.03);
+  transition: all 0.3s ease;
 }
 
 .message.user .bubble {
   background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
   color: white;
   border-bottom-right-radius: 4px;
+  box-shadow: 0 4px 15px rgba(100, 100, 255, 0.2);
 }
 
 .message.assistant .bubble {
   background: white;
   color: var(--text-primary);
   border-bottom-left-radius: 4px;
-  border: 1px solid rgba(0,0,0,0.05);
+  border: 1px solid rgba(255,255,255,0.5);
 }
 
 /* 代码块样式优化 */
 .message pre {
   margin: 12px 0;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow-x: auto;
-  background: #1e1e1e !important;
+  background: #1a1b26 !important;
+  border: 1px solid rgba(255,255,255,0.1);
 }
 
 .message code {
-  font-family: 'Fira Code', 'Monaco', 'Consolas', 'Courier New', monospace;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Monaco', monospace;
 }
 
 .message pre code {
@@ -681,11 +696,11 @@ async function confirmClearHistory() {
 /* 行内代码样式 */
 .message :not(pre) > code {
   background: rgba(135, 131, 120, 0.15);
-  color: #e83e8c;
+  color: #d63384;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 0.9em;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .message.user :not(pre) > code {
@@ -729,26 +744,26 @@ async function confirmClearHistory() {
   padding: 24px;
   background: transparent;
   width: 100%;
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
   position: relative;
 }
 
 .input-card {
   background: #fff;
-  border: 1px solid #e5e7eb;
   border-radius: 24px;
-  padding: 16px 20px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  padding: 16px 24px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.06);
   display: flex;
   flex-direction: column;
   gap: 12px;
-  transition: box-shadow 0.3s ease;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0,0,0,0.02);
 }
 
 .input-card:focus-within {
-  box-shadow: 0 8px 30px rgba(0,0,0,0.08);
-  border-color: var(--primary-color);
+  box-shadow: 0 12px 40px rgba(100, 100, 255, 0.12);
+  transform: translateY(-2px);
 }
 
 .chat-textarea {
@@ -756,16 +771,16 @@ async function confirmClearHistory() {
   border: none;
   outline: none;
   resize: none;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   color: var(--text-primary);
   min-height: 28px;
   max-height: 200px;
-  line-height: 1.5;
+  line-height: 1.6;
   font-family: inherit;
   background: transparent;
 }
 
-.chat-textarea::placeholder { color: #9ca3af; }
+.chat-textarea::placeholder { color: #a0aec0; }
 
 .toolbar {
   display: flex;
@@ -775,71 +790,76 @@ async function confirmClearHistory() {
 
 .left-tools {
   display: flex;
-  gap: 16px;
-  align-items: center;
+  gap: 12px;
 }
 
 .tool-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  color: #6b7280;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  color: var(--text-secondary);
   cursor: pointer;
-  padding: 6px 10px;
-  border-radius: 8px;
   transition: all 0.2s;
-  background: transparent;
-  font-size: 0.9rem;
-  font-weight: 500;
+  background: #f4f5f7;
 }
 
 .tool-btn:hover {
-  background: #f3f4f6;
+  background: #e0e7ff;
   color: var(--primary-color);
 }
 
-.tool-btn .icon { font-size: 1.2rem; }
+.tool-btn .icon { font-size: 1.1rem; }
 
 .send-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: #111827; /* Dark black/grey like image */
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
-  transition: all 0.2s;
+  font-size: 1.1rem;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 4px 12px rgba(100, 100, 255, 0.3);
+  border: none;
+  cursor: pointer;
 }
 
 .send-btn:hover:not(:disabled) {
-  opacity: 0.9;
-  transform: scale(1.05);
+  transform: scale(1.05) rotate(-5deg);
+  box-shadow: 0 6px 16px rgba(100, 100, 255, 0.4);
 }
 
 .send-btn:disabled {
-  background: #e5e7eb;
+  background: #e2e8f0;
   cursor: not-allowed;
-  color: #9ca3af;
+  box-shadow: none;
+  color: #a0aec0;
+  transform: none;
 }
 
 .stop-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
   background: #ff4757;
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   transition: all 0.2s;
-  animation: pulse 1.5s infinite;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(255, 71, 87, 0.3);
 }
 
 .stop-btn:hover {
-  background: #ee3344;
+  background: #ff6b81;
   transform: scale(1.05);
 }
 
@@ -852,36 +872,42 @@ async function confirmClearHistory() {
 /* Image Preview */
 .image-preview {
   position: absolute;
-  top: -90px;
+  top: -110px;
   left: 24px;
   background: white;
-  padding: 8px;
-  border-radius: 16px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  padding: 10px;
+  border-radius: 18px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
   animation: fadeIn 0.3s ease;
   z-index: 5;
 }
 
 .image-preview img {
-  height: 80px;
+  height: 90px;
   border-radius: 12px;
+  display: block;
 }
 
 .close-btn {
   position: absolute;
-  top: -8px;
-  right: -8px;
+  top: -10px;
+  right: -10px;
   background: #ff4757;
   color: white;
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
-  font-size: 12px;
+  font-size: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 8px rgba(255, 71, 87, 0.4);
+  cursor: pointer;
+  border: none;
+  transition: transform 0.2s;
 }
+
+.close-btn:hover { transform: scale(1.1); }
 
 /* 上传进度条 */
 .upload-progress {
@@ -892,45 +918,30 @@ async function confirmClearHistory() {
 .progress-bar {
   width: 100%;
   height: 4px;
-  background: rgba(0, 0, 0, 0.1);
+  background: #f0f0f0;
   border-radius: 2px;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
   transition: width 0.3s ease;
 }
 
 .progress-text {
   display: block;
   text-align: center;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--text-secondary);
   margin-top: 4px;
+  font-weight: 500;
 }
 
-/* Animations */
+/* Animations & Loader */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-.loader {
-  width: 16px;
-  height: 16px;
-  border: 2px solid #fff;
-  border-bottom-color: transparent;
-  border-radius: 50%;
-  display: inline-block;
-  box-sizing: border-box;
-  animation: rotation 1s linear infinite;
-}
-
-@keyframes rotation {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
 }
 
 @media (max-width: 640px) {

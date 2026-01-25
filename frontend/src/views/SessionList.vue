@@ -192,25 +192,30 @@ onMounted(() => {
 
 .sessions-header {
   padding: 16px 24px;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(0,0,0,0.05);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0,0,0,0.03);
   display: flex;
   align-items: center;
   gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .sessions-header button {
   color: var(--text-secondary);
-  font-weight: 500;
+  font-weight: 600;
   padding: 8px 16px;
-  border-radius: var(--radius-full);
-  background: #f0f2f5;
-  transition: var(--transition);
+  border-radius: 12px;
+  background: transparent;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  cursor: pointer;
 }
 
 .sessions-header button:hover {
-  background: #e4e6ea;
+  background: #f4f5f7;
   color: var(--text-primary);
 }
 
@@ -218,6 +223,7 @@ onMounted(() => {
   font-size: 1.5rem;
   color: var(--text-primary);
   margin: 0;
+  font-weight: 700;
 }
 
 .sessions-container {
@@ -226,7 +232,7 @@ onMounted(() => {
 
 .loading, .empty-state {
   text-align: center;
-  padding: 60px 20px;
+  padding: 80px 20px;
   color: var(--text-secondary);
   font-size: 1.1rem;
 }
@@ -234,31 +240,37 @@ onMounted(() => {
 .sessions-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 .session-card {
   background: white;
-  border-radius: 16px;
-  padding: 16px;
+  border-radius: 20px;
+  padding: 20px;
   display: flex;
   align-items: center;
-  gap: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  transition: all 0.2s;
+  gap: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+  border: 1px solid rgba(0,0,0,0.02);
+  transition: all 0.3s ease;
   cursor: pointer;
+  position: relative;
+  overflow: hidden;
 }
 
 .session-card:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
   transform: translateY(-2px);
+  border-color: rgba(100, 100, 255, 0.1);
 }
 
 .session-avatar img {
-  width: 50px;
-  height: 50px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   object-fit: cover;
+  border: 2px solid white;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
 .session-info {
@@ -270,99 +282,129 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .session-header h3 {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   color: var(--text-primary);
+  font-weight: 600;
 }
 
 .session-time {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
+  font-size: 0.8rem;
+  color: var(--text-light);
+  font-weight: 500;
 }
 
 .session-preview {
-  margin: 0 0 8px 0;
+  margin: 0 0 10px 0;
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1.5;
 }
 
 .session-meta {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
+  font-size: 0.8rem;
+  color: var(--text-light);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.session-meta::before {
+  content: '💬';
+  font-size: 0.9em;
 }
 
 .session-actions {
   display: flex;
   gap: 8px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.session-card:hover .session-actions {
+  opacity: 1;
 }
 
 .action-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: #f0f2f5;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #f4f5f7;
   font-size: 1.1rem;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
   display: flex;
   align-items: center;
   justify-content: center;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
 }
 
 .action-btn:hover {
-  background: #e4e6ea;
-  transform: scale(1.05);
+  background: #e0e7ff;
+  color: var(--primary-color);
+  transform: scale(1.1);
 }
 
 .action-btn.delete:hover {
-  background: #fee;
-  color: #d63031;
+  background: #ffe4e6;
+  color: #ff4757;
 }
 
+/* 分页 */
 .pagination {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 16px;
-  margin-top: 24px;
+  margin-top: 40px;
   padding: 16px;
 }
 
 .pagination button {
-  padding: 8px 16px;
-  border-radius: 8px;
+  padding: 10px 20px;
+  border-radius: 12px;
   background: white;
   color: var(--text-primary);
-  font-weight: 500;
+  font-weight: 600;
   transition: all 0.2s;
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  border: 1px solid transparent;
+  cursor: pointer;
 }
 
 .pagination button:not(:disabled):hover {
-  background: var(--primary-color);
-  color: white;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  background: white;
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+  box-shadow: 0 4px 12px rgba(100, 100, 255, 0.15);
+  transform: translateY(-1px);
 }
 
 .pagination button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  box-shadow: none;
+  background: #f9fafb;
 }
 
 .pagination span {
   color: var(--text-secondary);
   font-size: 0.9rem;
+  font-weight: 500;
 }
 
 @media (max-width: 640px) {
   .sessions-page { max-width: 100%; }
-  .session-card { padding: 12px; }
-  .session-avatar img { width: 40px; height: 40px; }
+  .session-card { padding: 16px; gap: 12px; }
+  .session-avatar img { width: 48px; height: 48px; }
+  .session-actions { opacity: 1; } /* 移动端常驻显示 */
 }
 </style>

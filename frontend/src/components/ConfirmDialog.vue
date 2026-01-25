@@ -49,54 +49,60 @@ function handleCancel() {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.5); /* 稍微加深的半透明遮罩 */
+  backdrop-filter: blur(5px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  animation: fadeIn 0.2s ease;
+  animation: fadeIn 0.3s ease;
 }
 
 .dialog-content {
   background: white;
-  border-radius: 12px;
-  padding: 24px;
+  border-radius: 24px; /* 大圆角 */
+  padding: 32px;
   width: 90%;
-  max-width: 400px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  animation: slideUp 0.3s ease;
+  max-width: 420px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
 }
 
 .dialog-header h3 {
   margin: 0 0 16px 0;
-  font-size: 1.25rem;
+  font-size: 1.5rem;
+  font-weight: 700;
   color: var(--text-primary);
+  text-align: center;
 }
 
 .dialog-body p {
-  margin: 0 0 24px 0;
+  margin: 0 0 32px 0;
   color: var(--text-secondary);
   line-height: 1.6;
+  text-align: center;
+  font-size: 1rem;
 }
 
 .dialog-footer {
   display: flex;
-  justify-content: flex-end;
-  gap: 12px;
+  justify-content: center;
+  gap: 16px;
 }
 
 .dialog-footer button {
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: 500;
-  font-size: 0.95rem;
+  padding: 12px 28px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 1rem;
   cursor: pointer;
   transition: all 0.2s ease;
+  min-width: 100px;
 }
 
 .btn-cancel {
-  background: #f0f2f5;
+  background: #f4f5f7;
   color: var(--text-secondary);
   border: none;
 }
@@ -114,7 +120,7 @@ function handleCancel() {
 }
 
 .btn-confirm:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(255, 107, 107, 0.4);
 }
 
@@ -125,11 +131,11 @@ function handleCancel() {
 
 @keyframes slideUp {
   from {
-    transform: translateY(20px);
+    transform: translateY(20px) scale(0.95);
     opacity: 0;
   }
   to {
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
     opacity: 1;
   }
 }

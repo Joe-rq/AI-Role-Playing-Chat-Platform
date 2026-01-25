@@ -24,10 +24,8 @@ npm run test:watch            # Run tests in watch mode
 npm run test:cov              # Run with coverage report
 npm run test:debug            # Debug tests with inspector
 npm run test:e2e              # Run end-to-end tests
-```
 
-**Running a single test:**
-```bash
+# Single test
 npm run test -- chat.service.spec.ts
 npm run test -- --testPathPattern=chat
 ```
@@ -73,7 +71,6 @@ import type { Response } from 'express';
 **DTOs & Validation:**
 ```typescript
 import { IsString, IsOptional, IsNumber } from 'class-validator';
-import { Type } from 'class-transformer';
 
 export class ChatRequestDto {
   @IsNumber()
@@ -93,12 +90,6 @@ export class ChatRequestDto {
 - Global exception filter: `GlobalExceptionFilter`
 - ValidationPipe globally enabled with `whitelist: true`
 - Log levels: `log()`, `warn()`, `error()`
-
-```typescript
-private readonly logger = new Logger(ClassName.name);
-this.logger.log('Operation completed');
-this.logger.error('Failed to process', error);
-```
 
 **TypeORM Entities:**
 ```typescript
@@ -140,10 +131,7 @@ export default {
 
 **Composables:** In `src/composables/`, named with `use` prefix: `useChatHistory.js`
 
-**Template:**
-- Use `type="button"` on buttons
-- Prefer `:class` bindings
-- Event handlers: `@click`, `@submit`, `@scroll`
+**Template:** Use `type="button"` on buttons, prefer `:class` bindings, event handlers: `@click`, `@submit`, `@scroll`
 
 ### API Design
 
