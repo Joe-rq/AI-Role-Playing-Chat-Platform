@@ -50,11 +50,13 @@ const { messages, remove } = useToast()
 <style scoped>
 .toast-container {
   position: fixed;
-  top: 20px;
-  right: 20px;
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 9999;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 12px;
   pointer-events: none;
 }
@@ -63,26 +65,27 @@ const { messages, remove } = useToast()
   display: flex;
   align-items: center;
   gap: 12px;
-  min-width: 300px;
-  max-width: 500px;
-  padding: 16px 20px;
+  width: fit-content;
+  min-width: 320px;
+  max-width: 90vw;
+  padding: 14px 24px;
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
   pointer-events: auto;
   cursor: pointer;
-  transition: all 0.3s ease;
-  border-left: 4px solid;
+  transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .toast-item:hover {
-  transform: translateX(-4px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.16);
+  transform: translateY(2px);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2);
 }
 
 .toast-success {
-  border-left-color: #10b981;
-  background: linear-gradient(to right, rgba(16, 185, 129, 0.05), white);
+  border-bottom: 4px solid #10b981;
+  background: linear-gradient(to bottom, white, rgba(16, 185, 129, 0.05));
 }
 
 .toast-success .toast-icon {
@@ -90,8 +93,8 @@ const { messages, remove } = useToast()
 }
 
 .toast-error {
-  border-left-color: #ef4444;
-  background: linear-gradient(to right, rgba(239, 68, 68, 0.05), white);
+  border-bottom: 4px solid #ef4444;
+  background: linear-gradient(to bottom, white, rgba(239, 68, 68, 0.05));
 }
 
 .toast-error .toast-icon {
@@ -99,8 +102,8 @@ const { messages, remove } = useToast()
 }
 
 .toast-warning {
-  border-left-color: #f59e0b;
-  background: linear-gradient(to right, rgba(245, 158, 11, 0.05), white);
+  border-bottom: 4px solid #f59e0b;
+  background: linear-gradient(to bottom, white, rgba(245, 158, 11, 0.05));
 }
 
 .toast-warning .toast-icon {
@@ -108,8 +111,8 @@ const { messages, remove } = useToast()
 }
 
 .toast-info {
-  border-left-color: #3b82f6;
-  background: linear-gradient(to right, rgba(59, 130, 246, 0.05), white);
+  border-bottom: 4px solid #3b82f6;
+  background: linear-gradient(to bottom, white, rgba(59, 130, 246, 0.05));
 }
 
 .toast-info .toast-icon {
@@ -129,6 +132,7 @@ const { messages, remove } = useToast()
   color: var(--text-primary);
   line-height: 1.5;
   word-break: break-word;
+  font-weight: 500;
 }
 
 .toast-close {
@@ -154,7 +158,7 @@ const { messages, remove } = useToast()
 
 /* Toast 动画 */
 .toast-enter-active {
-  animation: toastIn 0.3s ease;
+  animation: toastIn 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
 }
 
 .toast-leave-active {
@@ -163,36 +167,35 @@ const { messages, remove } = useToast()
 
 @keyframes toastIn {
   from {
-    transform: translateX(100%);
+    transform: translateY(-40px) scale(0.9);
     opacity: 0;
   }
   to {
-    transform: translateX(0);
+    transform: translateY(0) scale(1);
     opacity: 1;
   }
 }
 
 @keyframes toastOut {
   from {
-    transform: translateX(0) scale(1);
+    transform: translateY(0) scale(1);
     opacity: 1;
   }
   to {
-    transform: translateX(100%) scale(0.8);
+    transform: translateY(-20px) scale(0.8);
     opacity: 0;
   }
 }
 
 @media (max-width: 640px) {
   .toast-container {
-    top: 10px;
-    right: 10px;
-    left: 10px;
+    top: 20px;
+    width: 90%;
   }
 
   .toast-item {
     min-width: auto;
-    max-width: 100%;
+    width: 100%;
   }
 }
 </style>

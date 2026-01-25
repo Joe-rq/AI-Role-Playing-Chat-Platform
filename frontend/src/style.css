@@ -88,6 +88,18 @@ input, textarea {
   100% { transform: translateY(0px); }
 }
 
-.fade-in {
-  animation: fadeIn 0.5s ease forwards;
+/* Prevent browser autofill from breaking UI */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #f4f5f7 inset !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* For modal content where inputs might be white on focus */
+.modal-content input:-webkit-autofill:focus,
+.form-input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
 }

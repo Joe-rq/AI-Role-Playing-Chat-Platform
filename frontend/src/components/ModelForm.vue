@@ -6,111 +6,116 @@
       <div class="form-group">
         <label>
           显示名称 <span class="required">*</span>
-          <input
-            v-model="formData.name"
-            required
-            placeholder="如：GPT-4o Mini - 高性价比"
-            maxlength="100"
-          />
         </label>
+        <input
+          v-model="formData.name"
+          required
+          placeholder="如：GPT-4o Mini - 高性价比"
+          maxlength="100"
+          class="form-input"
+        />
       </div>
 
       <div class="form-group">
         <label>
           厂商 <span class="required">*</span>
-          <select v-model="formData.provider" required>
-            <option value="openai">OpenAI</option>
-            <option value="anthropic">Anthropic (Claude)</option>
-            <option value="google">Google (Gemini)</option>
-            <option value="alibaba">Alibaba (Qwen)</option>
-            <option value="deepseek">DeepSeek</option>
-            <option value="zhipu">Zhipu AI (GLM)</option>
-          </select>
         </label>
+        <select v-model="formData.provider" required class="form-select">
+          <option value="openai">OpenAI</option>
+          <option value="anthropic">Anthropic (Claude)</option>
+          <option value="google">Google (Gemini)</option>
+          <option value="alibaba">Alibaba (Qwen)</option>
+          <option value="deepseek">DeepSeek</option>
+          <option value="zhipu">Zhipu AI (GLM)</option>
+        </select>
       </div>
 
       <div class="form-group">
         <label>
           模型ID <span class="required">*</span>
-          <input
-            v-model="formData.modelId"
-            required
-            placeholder="如：gpt-4o-mini"
-            maxlength="100"
-          />
         </label>
+        <input
+          v-model="formData.modelId"
+          required
+          placeholder="如：gpt-4o-mini"
+          maxlength="100"
+          class="form-input"
+        />
         <p class="hint">实际调用API时使用的模型标识符</p>
       </div>
 
       <div class="form-group">
         <label>
           API Key <span class="required">*</span>
-          <div class="api-key-input">
-            <input
-              v-model="formData.apiKey"
-              :type="showApiKey ? 'text' : 'password'"
-              :required="!isEdit"
-              :placeholder="isEdit ? '留空则不修改' : 'sk-...'"
-              minlength="10"
-            />
-            <button type="button" @click="showApiKey = !showApiKey" class="toggle-btn">
-              {{ showApiKey ? '👁️' : '👁️‍🗨️' }}
-            </button>
-          </div>
         </label>
-        <p class="hint" v-if="isEdit">留空则保持原API Key不变</p>
+        <div class="api-key-input-wrapper">
+          <input
+            v-model="formData.apiKey"
+            :type="showApiKey ? 'text' : 'password'"
+            :required="!isEdit"
+            :placeholder="isEdit ? '•••••••••••••••• (已加密，留空不修改)' : '输入您的 API Key (sk-...)'"
+            autocomplete="new-password"
+            class="form-input api-key-input"
+          />
+          <button type="button" @click="showApiKey = !showApiKey" class="visibility-toggle" :title="showApiKey ? '隐藏' : '显示'">
+            <span class="icon">{{ showApiKey ? '🙈' : '👁️' }}</span>
+          </button>
+        </div>
+        <p class="hint" v-if="isEdit">出于安全考虑，系统不显示现有 Key。如需更换，请在此输入新 Key。</p>
       </div>
 
       <div class="form-group">
         <label>
           Base URL <span class="required">*</span>
-          <input
-            v-model="formData.baseURL"
-            required
-            type="url"
-            placeholder="https://api.openai.com/v1"
-          />
         </label>
+        <input
+          v-model="formData.baseURL"
+          required
+          type="url"
+          placeholder="https://api.openai.com/v1"
+          class="form-input"
+        />
       </div>
 
       <div class="form-group">
-        <label>
-          描述（可选）
-          <textarea
-            v-model="formData.description"
-            placeholder="模型的特点和适用场景"
-            rows="3"
-            maxlength="500"
-          ></textarea>
-        </label>
+        <label>描述（可选）</label>
+        <textarea
+          v-model="formData.description"
+          placeholder="模型的特点和适用场景"
+          rows="3"
+          maxlength="500"
+          class="form-textarea"
+        ></textarea>
       </div>
 
       <div class="form-row">
         <div class="form-group">
           <label>
             默认Temperature
-            <input
-              type="number"
-              v-model.number="formData.defaultTemperature"
-              min="0"
-              max="2"
-              step="0.1"
-            />
           </label>
+          <input
+            type="number"
+            v-model.number="formData.defaultTemperature"
+            min="0"
+            max="2"
+            step="0.1"
+            class="form-input"
+          />
           <p class="hint">0-2之间，越高越随机</p>
         </div>
 
         <div class="form-group">
           <label>
             默认Max Tokens
-            <input
-              type="number"
-              v-model.number="formData.defaultMaxTokens"
-              min="1"
-              max="32000"
-              step="100"
-            />
           </label>
+          <input
+            type="number"
+            v-model.number="formData.defaultMaxTokens"
+            min="1"
+            max="32000"
+            step="100"
+            class="form-input"
+          />
           <p class="hint">最大生成长度</p>
         </div>
       </div>
@@ -123,8 +128,8 @@
       </div>
 
       <div class="form-actions">
+        <button type="submit" class="save-btn">{{ isEdit ? '保存更改' : '立即添加' }}</button>
         <button type="button" @click="$emit('cancel')" class="cancel-btn">取消</button>
-        <button type="submit" class="save-btn">保存</button>
       </div>
     </form>
   </div>
@@ -169,146 +174,180 @@ function handleSubmit() {
 
 <style scoped>
 .model-form {
-  padding: 20px;
-  max-width: 600px;
+  padding: 24px;
 }
 
 h2 {
-  margin: 0 0 24px 0;
-  font-size: 20px;
-  font-weight: 600;
+  margin: 0 0 32px 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
 }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 20px;
 }
 
 label {
   display: block;
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 6px;
-  color: #333;
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text-primary);
 }
 
 .required {
-  color: #e74c3c;
+  color: #ff4757;
+  margin-left: 4px;
 }
 
-input[type="text"],
-input[type="password"],
-input[type="url"],
-input[type="number"],
-select,
-textarea {
+.form-input,
+.form-select,
+.form-textarea {
   width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 14px;
+  padding: 12px 16px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: #f4f5f7;
+  color: var(--text-primary);
+  font-size: 1rem;
   font-family: inherit;
-  transition: border-color 0.2s;
+  transition: all 0.2s ease;
 }
 
-input:focus,
-select:focus,
-textarea:focus {
+.form-input:hover,
+.form-select:hover,
+.form-textarea:hover {
+  background: #ebedf0;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
   outline: none;
-  border-color: #3b82f6;
+  background: #fff;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 4px var(--primary-weak);
 }
 
-textarea {
+.form-textarea {
   resize: vertical;
-  min-height: 60px;
+  min-height: 100px;
+  line-height: 1.6;
+}
+
+.api-key-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .api-key-input {
+  padding-right: 48px !important; /* 为右侧按钮留出空间 */
+}
+
+.visibility-toggle {
+  position: absolute;
+  right: 8px;
+  background: transparent;
+  border: none;
+  width: 32px;
+  height: 32px;
   display: flex;
-  gap: 8px;
-}
-
-.api-key-input input {
-  flex: 1;
-}
-
-.toggle-btn {
-  padding: 8px 12px;
-  background: #f3f4f6;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  font-size: 16px;
-  transition: background 0.2s;
+  border-radius: 8px;
+  transition: all 0.2s;
+  font-size: 1.2rem;
 }
 
-.toggle-btn:hover {
-  background: #e5e7eb;
+.visibility-toggle:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.form-input::placeholder {
+  color: #a0aec0;
+  font-size: 0.9rem;
 }
 
 .hint {
-  margin: 4px 0 0 0;
-  font-size: 12px;
-  color: #6b7280;
+  margin: 8px 0 0 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
 }
 
 .checkbox-group {
-  margin-top: 24px;
+  margin-top: 32px;
+  background: #f8f9ff;
+  padding: 16px;
+  border-radius: 12px;
 }
 
 .checkbox {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   cursor: pointer;
   user-select: none;
 }
 
 .checkbox input[type="checkbox"] {
-  width: auto;
+  width: 20px;
+  height: 20px;
+  accent-color: var(--primary-color);
   cursor: pointer;
+}
+
+.checkbox span {
+  font-weight: 500;
+  color: var(--text-primary);
 }
 
 .form-actions {
   display: flex;
+  flex-direction: column;
   gap: 12px;
-  justify-content: flex-end;
-  margin-top: 32px;
-  padding-top: 20px;
-  border-top: 1px solid #e5e7eb;
+  margin-top: 40px;
 }
 
 button {
-  padding: 10px 20px;
+  width: 100%;
+  padding: 14px;
   border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
-}
-
-.cancel-btn {
-  background: #f3f4f6;
-  color: #374151;
-}
-
-.cancel-btn:hover {
-  background: #e5e7eb;
+  transition: all 0.2s ease;
 }
 
 .save-btn {
-  background: #3b82f6;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
   color: white;
+  box-shadow: 0 4px 12px rgba(100, 100, 255, 0.25);
 }
 
 .save-btn:hover {
-  background: #2563eb;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(100, 100, 255, 0.35);
+}
+
+.cancel-btn {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.cancel-btn:hover {
+  background: #f0f2f5;
+  color: var(--text-primary);
 }
 </style>
 
