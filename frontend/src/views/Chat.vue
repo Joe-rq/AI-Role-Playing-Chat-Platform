@@ -198,9 +198,9 @@ onMounted(async () => {
     console.error('获取角色失败:', error)
   }
 
-  // 如果没有历史记录且角色有 greeting，添加 greeting
+  // 如果没有历史记录且角色有 greeting，添加 greeting（仅前端显示，不保存到服务器）
   if (messages.value.length === 0 && character.value?.greeting) {
-    addMessage('assistant', character.value.greeting)
+    addMessage('assistant', character.value.greeting, null, { saveServer: false })
   }
 
   await scrollToBottom()
@@ -478,9 +478,9 @@ async function confirmClearHistory() {
   try {
     await clearHistory()
 
-    // 如果角色有greeting，重新添加
+    // 如果角色有greeting，重新添加（仅前端显示，不保存到服务器）
     if (character.value?.greeting) {
-      addMessage('assistant', character.value.greeting)
+      addMessage('assistant', character.value.greeting, null, { saveServer: false })
     }
 
     await scrollToBottom()

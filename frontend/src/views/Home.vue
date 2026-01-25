@@ -48,20 +48,55 @@
     </div>
 
     <!-- 创建/编辑角色表单 -->
-    <div v-if="showCreateForm" class="create-form">
-      <h2>{{ isEditMode ? '编辑角色' : '创建新角色' }}</h2>
-      <input v-model="newCharacter.name" placeholder="角色名称" />
-      <input v-model="newCharacter.avatar" placeholder="头像URL（可选）" />
-      
-      <!-- Tags 输入 -->
-      <TagsInput v-model="newCharacter.tags" />
-      
-      <textarea v-model="newCharacter.systemPrompt" placeholder="系统提示词（角色设定）"></textarea>
-      <textarea v-model="newCharacter.greeting" placeholder="开场白"></textarea>
-      <textarea v-model="newCharacter.description" placeholder="简介"></textarea>
-      
-      <!-- Few-shot 示例对话 -->
-      <ExampleDialogues v-model="exampleDialogues" />
+    <Transition name="modal">
+      <div v-if="showCreateForm" class="create-form">
+        <h2>{{ isEditMode ? '编辑角色' : '创建新角色' }}</h2>
+
+        <!-- 角色名称 -->
+        <div class="form-field">
+          <label class="field-label">
+            角色名称
+            <span class="required">*</span>
+          </label>
+          <input v-model="newCharacter.name" placeholder="例如：赛博朋克黑客" />
+        </div>
+
+        <!-- 头像URL -->
+        <div class="form-field">
+          <label class="field-label">头像URL（可选）</label>
+          <input v-model="newCharacter.avatar" placeholder="例如：https://example.com/avatar.png" />
+          <span class="field-hint">留空将使用默认头像</span>
+        </div>
+
+        <!-- Tags 输入 -->
+        <TagsInput v-model="newCharacter.tags" />
+
+        <!-- 系统提示词 -->
+        <div class="form-field">
+          <label class="field-label">
+            系统提示词（角色设定）
+            <span class="required">*</span>
+          </label>
+          <textarea v-model="newCharacter.systemPrompt" placeholder="例如：你是一个来自2077年的顶尖黑客，说话冷淡，喜欢用技术术语..."></textarea>
+          <span class="field-hint">定义角色的性格、背景、说话风格等，这是最重要的设定</span>
+        </div>
+
+        <!-- 开场白 -->
+        <div class="form-field">
+          <label class="field-label">开场白</label>
+          <textarea v-model="newCharacter.greeting" placeholder="例如：链路已连接...正在扫描你的生物特征...认证通过。"></textarea>
+          <span class="field-hint">角色在对话开始时说的第一句话</span>
+        </div>
+
+        <!-- 简介 -->
+        <div class="form-field">
+          <label class="field-label">简介</label>
+          <textarea v-model="newCharacter.description" placeholder="例如：赛博世界的顶尖黑客，游走在数据洪流中的幽灵。"></textarea>
+          <span class="field-hint">简短描述角色特点，显示在角色卡片上</span>
+        </div>
+
+        <!-- Few-shot 示例对话 -->
+        <ExampleDialogues v-model="exampleDialogues" />
       
       <!-- 模型配置 -->
       <div class="model-config">
@@ -96,6 +131,7 @@
         <button @click="cancelForm">取消</button>
       </div>
     </div>
+    </Transition>
 
     <!-- 删除确认对话框 -->
     <ConfirmDialog
@@ -571,7 +607,37 @@ button:hover {
   overflow-y: auto; /* 允许垂直滚动 */
   z-index: 100;
   border: 1px solid rgba(255,255,255,0.5);
-  animation: fadeIn 0.3s ease;
+}
+
+/* Modal 动画 */
+.modal-enter-active {
+  animation: modalIn 0.3s ease-out;
+}
+
+.modal-leave-active {
+  animation: modalOut 0.2s ease-in;
+}
+
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes modalOut {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
 }
 
 .create-form h2 {
@@ -583,7 +649,7 @@ button:hover {
 .create-form textarea {
   width: 100%;
   padding: 12px 16px;
-  margin-bottom: 16px;
+  margin-bottom: 0;
   border: 1px solid #eee;
   border-radius: var(--radius-sm);
   background: #fdfdfd;
@@ -602,6 +668,32 @@ button:hover {
 .create-form textarea {
   min-height: 100px;
   resize: vertical;
+}
+
+/* 表单字段 */
+.form-field {
+  margin-bottom: 20px;
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.field-label .required {
+  color: #ff6b6b;
+  margin-left: 4px;
+}
+
+.field-hint {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
 }
 
 .model-config {
@@ -668,6 +760,16 @@ button:hover {
   background: rgba(0,0,0,0.3);
   z-index: -1;
   pointer-events: none; /* 不拦截点击事件 */
+  animation: backdropIn 0.3s ease-out;
+}
+
+@keyframes backdropIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @media (max-width: 640px) {
