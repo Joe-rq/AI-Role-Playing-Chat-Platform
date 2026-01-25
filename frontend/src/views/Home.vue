@@ -49,7 +49,8 @@
 
     <!-- 创建/编辑角色表单 -->
     <Transition name="modal">
-      <div v-if="showCreateForm" class="create-form">
+      <div v-if="showCreateForm" class="modal-overlay" @click.self="cancelForm">
+        <div class="modal-content">
         <h2>{{ isEditMode ? '编辑角色' : '创建新角色' }}</h2>
 
         <!-- 角色名称 -->
@@ -127,10 +128,11 @@
         </label>
       </div>
       <div class="form-actions">
-        <button @click="handleSubmit">{{ isEditMode ? '保存' : '创建' }}</button>
-        <button @click="cancelForm">取消</button>
+        <button class="btn-primary" @click="handleSubmit">{{ isEditMode ? '保存' : '创建' }}</button>
+        <button class="btn-secondary" @click="cancelForm">取消</button>
       </div>
-    </div>
+        </div>
+      </div>
     </Transition>
 
     <!-- 删除确认对话框 -->
@@ -590,93 +592,130 @@ button:hover {
   box-shadow: 0 6px 20px rgba(255, 100, 150, 0.4);
 }
 
-/* Create Form Modal */
-.create-form {
+/* Modal Overlay & Content */
+.modal-overlay {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  padding: 40px;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  width: 90%;
-  max-width: 500px;
-  max-height: 90vh; /* 限制最大高度 */
-  overflow-y: auto; /* 允许垂直滚动 */
-  z-index: 100;
-  border: 1px solid rgba(255,255,255,0.5);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5); /* 稍微加深的半透明遮罩 */
+  backdrop-filter: blur(5px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-content {
+  background: #ffffff;
+  width: 100%;
+  max-width: 550px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 24px;
+  padding: 32px 40px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0,0,0,0.02);
+  position: relative;
+  /* 自定义滚动条样式 */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,0,0,0.1) transparent;
 }
 
 /* Modal 动画 */
-.modal-enter-active {
-  animation: modalIn 0.3s ease-out;
-}
-
+.modal-enter-active,
 .modal-leave-active {
-  animation: modalOut 0.2s ease-in;
+  transition: opacity 0.3s ease;
 }
 
-@keyframes modalIn {
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-enter-active .modal-content {
+  animation: modalContentIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal-leave-active .modal-content {
+  animation: modalContentOut 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes modalContentIn {
   from {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.9);
+    transform: scale(0.95) translateY(10px);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: scale(1) translateY(0);
   }
 }
 
-@keyframes modalOut {
+@keyframes modalContentOut {
   from {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: scale(1) translateY(0);
   }
   to {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.9);
+    transform: scale(0.95) translateY(10px);
   }
 }
 
-.create-form h2 {
-  margin-bottom: 24px;
+.modal-content h2 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 30px;
   color: var(--text-primary);
+  text-align: center;
+  position: relative;
 }
 
-.create-form input,
-.create-form textarea {
+.modal-content input,
+.modal-content textarea,
+.modal-content select {
   width: 100%;
   padding: 12px 16px;
   margin-bottom: 0;
-  border: 1px solid #eee;
-  border-radius: var(--radius-sm);
-  background: #fdfdfd;
-  transition: var(--transition);
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: #f4f5f7;
+  transition: all 0.2s ease;
   font-size: 1rem;
+  color: var(--text-primary);
 }
 
-.create-form input:focus,
-.create-form textarea:focus {
+.modal-content input:hover,
+.modal-content textarea:hover,
+.modal-content select:hover {
+  background: #ebedf0;
+}
+
+.modal-content input:focus,
+.modal-content textarea:focus,
+.modal-content select:focus {
   outline: none;
-  border-color: var(--primary-color);
   background: #fff;
-  box-shadow: 0 0 0 3px rgba(100, 100, 255, 0.1);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 4px var(--primary-weak);
 }
 
-.create-form textarea {
-  min-height: 100px;
+.modal-content textarea {
+  min-height: 120px;
   resize: vertical;
+  line-height: 1.6;
 }
 
 /* 表单字段 */
 .form-field {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .field-label {
-  display: block;
+  display: flex;
+  align-items: center;
   margin-bottom: 8px;
   font-weight: 600;
   font-size: 0.95rem;
@@ -684,92 +723,118 @@ button:hover {
 }
 
 .field-label .required {
-  color: #ff6b6b;
+  color: #ff4757;
   margin-left: 4px;
+  font-size: 1.2em;
+  line-height: 1;
 }
 
 .field-hint {
   display: block;
-  margin-top: 6px;
+  margin-top: 8px;
   font-size: 0.85rem;
   color: var(--text-secondary);
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 .model-config {
-  margin: 20px 0;
-  padding: 16px;
-  background: rgba(100, 100, 255, 0.05);
-  border-radius: 8px;
-  border: 1px solid rgba(100, 100, 255, 0.2);
+  margin: 30px 0;
+  padding: 24px;
+  background: linear-gradient(to bottom right, #f8f9ff, #f3f4fa);
+  border-radius: 16px;
+  border: 1px solid rgba(100, 100, 255, 0.1);
 }
 
 .model-config h3 {
-  margin: 0 0 16px 0;
-  font-size: 1rem;
+  margin: 0 0 20px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
   color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.model-config h3::before {
+  content: '⚙️';
+  font-size: 1.2em;
 }
 
 .model-config label {
   display: block;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   font-size: 0.9rem;
   color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.model-config label:last-child {
+  margin-bottom: 0;
 }
 
 .model-config select,
 .model-config input[type="number"] {
-  width: 100%;
-  margin-top: 4px;
+  margin-top: 6px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
 }
 
 .model-config input[type="range"] {
   width: 100%;
-  margin: 8px 0;
+  margin: 12px 0 8px;
+  accent-color: var(--primary-color);
+  height: 6px;
+  background: #ddd;
+  border-radius: 3px;
+  -webkit-appearance: none;
 }
 
 .model-config .hint {
   display: block;
   font-size: 0.8rem;
-  color: #999;
-  margin-top: 4px;
+  color: #94a3b8;
+  margin-top: 6px;
 }
 
 .form-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  margin-top: 10px;
+  gap: 16px;
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #f0f0f0;
 }
 
-.form-actions button:last-child {
-  background: #f0f2f5;
+.form-actions button {
+  padding: 12px 28px;
+  font-size: 1rem;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.form-actions .btn-primary {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  box-shadow: 0 4px 12px rgba(100, 100, 255, 0.25);
+}
+
+.form-actions .btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(100, 100, 255, 0.35);
+}
+
+.form-actions .btn-secondary {
+  background: transparent;
   color: var(--text-secondary);
   box-shadow: none;
 }
-.form-actions button:last-child:hover {
-  background: #e4e6ea;
+
+.form-actions .btn-secondary:hover {
+  background: #f0f2f5;
   color: var(--text-primary);
-}
-
-/* Backdrop for modal */
-.create-form::after {
-  content: '';
-  position: fixed;
-  top: -100vh; left: -100vw; right: -100vw; bottom: -100vh;
-  background: rgba(0,0,0,0.3);
-  z-index: -1;
-  pointer-events: none; /* 不拦截点击事件 */
-  animation: backdropIn 0.3s ease-out;
-}
-
-@keyframes backdropIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
 }
 
 @media (max-width: 640px) {

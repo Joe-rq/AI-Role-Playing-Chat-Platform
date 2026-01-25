@@ -91,18 +91,18 @@ function removeTag(index) {
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
-  padding: 12px;
-  border: 1px solid #eee;
-  border-radius: var(--radius-sm);
-  background: #fdfdfd;
-  min-height: 60px;
-  transition: var(--transition);
+  padding: 8px 12px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: #f4f5f7;
+  min-height: 52px;
+  transition: all 0.2s ease;
 }
 
 .tags-list:focus-within {
-  border-color: var(--primary-color);
   background: #fff;
-  box-shadow: 0 0 0 3px rgba(100, 100, 255, 0.1);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 4px var(--primary-weak);
 }
 
 .tag {

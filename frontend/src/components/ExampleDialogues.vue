@@ -57,96 +57,114 @@ function removeExample(index) {
 
 <style scoped>
 .example-dialogues {
-  margin: 20px 0;
-  padding: 16px;
-  background: rgba(255, 193, 7, 0.05);
-  border-radius: 8px;
-  border: 1px solid rgba(255, 193, 7, 0.3);
+  margin: 30px 0;
+  padding: 24px;
+  background: #f8f9ff;
+  border-radius: 16px;
+  border: 1px solid rgba(100, 100, 255, 0.1);
 }
 
 .example-dialogues h3 {
   margin: 0 0 8px 0;
-  font-size: 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
   color: var(--text-primary);
 }
 
 .example-dialogues .desc {
-  margin: 0 0 16px 0;
-  font-size: 0.85rem;
-  color: #666;
+  margin: 0 0 20px 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
 }
 
 .example-item {
   background: white;
-  padding: 12px;
-  border-radius: 6px;
-  margin-bottom: 12px;
-  border: 1px solid #eee;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  border: 1px solid rgba(0,0,0,0.03);
   position: relative;
+  transition: all 0.2s ease;
+}
+
+.example-item:hover {
+  box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+  transform: translateY(-2px);
 }
 
 .example-num {
-  font-size: 0.75rem;
-  color: #999;
-  margin-bottom: 8px;
-  font-weight: 600;
+  font-size: 0.8rem;
+  color: var(--primary-color);
+  margin-bottom: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.example-input {
+.example-input,
+.example-textarea {
   width: 100%;
-  padding: 8px 12px;
-  margin-bottom: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 0.9rem;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: #f4f5f7;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  color: var(--text-primary);
 }
 
 .example-textarea {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  min-height: 60px;
+  min-height: 80px;
   resize: vertical;
-  font-size: 0.9rem;
+  line-height: 1.6;
 }
 
 .example-input:focus,
 .example-textarea:focus {
   outline: none;
-  border-color: #ffc107;
+  background: #fff;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 4px var(--primary-weak);
 }
 
 .btn-remove {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  padding: 4px 8px;
-  font-size: 0.75rem;
-  background: #fee;
-  color: #d63031;
-  border-radius: 4px;
+  top: 16px;
+  right: 16px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  background: rgba(255, 71, 87, 0.1);
+  color: #ff4757;
+  border-radius: 8px;
   transition: all 0.2s;
+  font-weight: 600;
 }
 
 .btn-remove:hover {
-  background: #d63031;
+  background: #ff4757;
   color: white;
 }
 
 .btn-add {
   width: 100%;
-  padding: 10px;
-  background: white;
-  border: 2px dashed #ffc107;
-  color: #ffc107;
-  border-radius: 6px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 2px dashed #cbd5e1;
+  color: var(--text-secondary);
+  border-radius: 12px;
   font-weight: 600;
+  font-size: 0.95rem;
   transition: all 0.2s;
+  cursor: pointer;
 }
 
 .btn-add:hover {
-  background: #fff9e6;
-  border-style: solid;
+  background: #fff;
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  box-shadow: 0 4px 12px rgba(100, 100, 255, 0.1);
 }
 </style>
