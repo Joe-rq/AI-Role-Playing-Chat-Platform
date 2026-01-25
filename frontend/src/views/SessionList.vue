@@ -51,6 +51,14 @@
         <button @click="nextPage" :disabled="currentPage === totalPages">下一页</button>
       </div>
     </div>
+
+    <ConfirmDialog
+      :visible="showDeleteConfirm"
+      title="确认删除"
+      message="确定要删除这个会话吗？此操作不可恢复！"
+      @confirm="confirmDelete"
+      @cancel="closeDeleteConfirm"
+    />
   </div>
 </template>
 
@@ -58,13 +66,18 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { getSessions, deleteSession, exportSession } from '../services/api'
+import ConfirmDialog from '../components/ConfirmDialog.vue'
+import { useToast } from '../composables/useToast'
 
 const router = useRouter()
+const toast = useToast()
 const sessions = ref([])
 const loading = ref(false)
 const currentPage = ref(1)
 const totalCount = ref(0)
 const pageSize = 20
+const showDeleteConfirm = ref(false)
+const sessionToDelete = ref(null)
 
 const totalPages = computed(() => Math.ceil(totalCount.value / pageSize))
 
@@ -88,34 +101,49 @@ async function loadSessions() {
     totalCount.value = data.total || 0
   } catch (error) {
     console.error('加载会话列表失败:', error)
-    alert('加载失败，请重试')
+    toast.error('加载失败，请重试')
   } finally {
     loading.value = false
   }
 }
 
-async function handleDelete(sessionKey) {
-  if (!confirm('确定要删除这个会话吗？此操作不可恢复！')) {
-    return
-  }
+function handleDelete(sessionKey) {
+  sessionToDelete.value = sessionKey
+  showDeleteConfirm.value = true
+}
 
+function closeDeleteConfirm() {
+  showDeleteConfirm.value = false
+  sessionToDelete.value = null
+}
+
+async function confirmDelete() {
   try {
-    await deleteSession(sessionKey)
-    alert('删除成功')
+    await deleteSession(sessionToDelete.value)
+    toast.success('删除成功')
     await loadSessions() // 重新加载列表
   } catch (error) {
     console.error('删除会话失败:', error)
-    alert('删除失败，请重试')
+    toast.error('删除失败，请重试')
+  } finally {
+    closeDeleteConfirm()
   }
 }
 
 async function handleExport(sessionKey) {
   try {
-    await exportSession(sessionKey)
-    alert('导出成功')
+    const data = await exportSession(sessionKey)
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `session-${sessionKey}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+    toast.success('导出成功')
   } catch (error) {
     console.error('导出会话失败:', error)
-    alert('导出失败，请重试')
+    toast.error('导出失败，请重试')
   }
 }
 

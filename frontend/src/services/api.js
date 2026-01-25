@@ -19,6 +19,10 @@ export async function createCharacter(data) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
     })
+    if (!res.ok) {
+        const error = await res.json().catch(() => ({ message: '创建角色失败' }))
+        throw new Error(error.message || '创建角色失败')
+    }
     return res.json()
 }
 
@@ -29,6 +33,10 @@ export async function updateCharacter(id, data) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
     })
+    if (!res.ok) {
+        const error = await res.json().catch(() => ({ message: '更新角色失败' }))
+        throw new Error(error.message || '更新角色失败')
+    }
     return res.json()
 }
 
@@ -58,6 +66,10 @@ export async function uploadImage(file) {
         method: 'POST',
         body: formData,
     })
+    if (!res.ok) {
+        const error = await res.json().catch(() => ({ message: '图片上传失败' }))
+        throw new Error(error.message || '图片上传失败')
+    }
     return res.json()
 }
 
@@ -129,6 +141,10 @@ export async function deleteSession(sessionKey) {
     const res = await fetch(`${API_BASE}/chat/sessions/${sessionKey}`, {
         method: 'DELETE',
     })
+    if (!res.ok) {
+        const error = await res.json().catch(() => ({ message: '删除失败' }))
+        throw new Error(error.message || '删除失败')
+    }
     return res.json()
 }
 
@@ -143,18 +159,11 @@ export async function getSessions(characterId, page = 1, limit = 20) {
 // 导出会话数据
 export async function exportSession(sessionKey) {
     const res = await fetch(`${API_BASE}/chat/sessions/${sessionKey}/export`)
-    const data = await res.json()
-
-    // 下载为JSON文件
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `session-${sessionKey}.json`
-    a.click()
-    URL.revokeObjectURL(url)
-
-    return data
+    if (!res.ok) {
+        const error = await res.json().catch(() => ({ message: '导出会话失败' }))
+        throw new Error(error.message || '导出会话失败')
+    }
+    return res.json()
 }
 
 // 获取可用的AI模型列表

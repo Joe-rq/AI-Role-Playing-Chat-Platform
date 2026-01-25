@@ -105,6 +105,15 @@
       @confirm="handleDelete"
       @cancel="showDeleteDialog = false"
     />
+
+    <!-- 清空历史确认对话框 -->
+    <ConfirmDialog
+      :visible="showClearHistoryDialog"
+      title="清空历史记录"
+      :message="clearHistoryMessage"
+      @confirm="handleClearHistoryAndDelete"
+      @cancel="showClearHistoryDialog = false"
+    />
   </div>
 </template>
 
@@ -115,8 +124,10 @@ import { fetchCharacters, createCharacter, updateCharacter, deleteCharacter, del
 import ConfirmDialog from '../components/ConfirmDialog.vue'
 import TagsInput from '../components/TagsInput.vue'
 import ExampleDialogues from '../components/ExampleDialogues.vue'
+import { useToast } from '../composables/useToast'
 
 const router = useRouter()
+const toast = useToast()
 const characters = ref([])
 const showCreateForm = ref(false)
 const isEditMode = ref(false)
@@ -138,6 +149,8 @@ const newCharacter = ref({
 const showDeleteDialog = ref(false)
 const deleteMessage = ref('')
 const characterToDelete = ref(null)
+const showClearHistoryDialog = ref(false)
+const clearHistoryMessage = ref('')
 
 onMounted(async () => {
   characters.value = await fetchCharacters()
@@ -195,36 +208,48 @@ async function handleDelete() {
       const message = data.message || '删除失败'
       const hasHistory = data.statusCode === 400 && /对话记录/.test(message)
       if (hasHistory) {
-        const shouldClear = window.confirm(`${message}\n是否清空该角色历史并继续删除？`)
-        if (!shouldClear) return
-
-        const clearResult = await deleteCharacterHistory(characterToDelete.value.id)
-        if (!clearResult.ok) {
-          alert(clearResult.data.message || '清空历史失败')
-          return
-        }
-
-        const retry = await deleteCharacter(characterToDelete.value.id)
-        if (!retry.ok) {
-          alert(retry.data.message || '删除失败')
-          return
-        }
-
-        characters.value = await fetchCharacters()
-        alert(retry.data.message || '删除成功')
+        // 显示清空历史确认对话框
+        clearHistoryMessage.value = `${message}\n是否清空该角色历史并继续删除？`
+        showClearHistoryDialog.value = true
         return
       }
 
-      alert(message)
+      toast.error(message)
       return
     }
 
     characters.value = await fetchCharacters()
-    alert(data.message || '删除成功')
+    toast.success(data.message || '删除成功')
   } catch (error) {
     console.error('删除操作出错:', error)
-    alert('网络错误，请稍后再试')
+    toast.error('网络错误，请稍后再试')
   } finally {
+    showDeleteDialog.value = false
+    characterToDelete.value = null
+  }
+}
+
+async function handleClearHistoryAndDelete() {
+  try {
+    const clearResult = await deleteCharacterHistory(characterToDelete.value.id)
+    if (!clearResult.ok) {
+      toast.error(clearResult.data.message || '清空历史失败')
+      return
+    }
+
+    const retry = await deleteCharacter(characterToDelete.value.id)
+    if (!retry.ok) {
+      toast.error(retry.data.message || '删除失败')
+      return
+    }
+
+    characters.value = await fetchCharacters()
+    toast.success(retry.data.message || '删除成功')
+  } catch (error) {
+    console.error('删除操作出错:', error)
+    toast.error('网络错误，请稍后再试')
+  } finally {
+    showClearHistoryDialog.value = false
     showDeleteDialog.value = false
     characterToDelete.value = null
   }
@@ -232,7 +257,7 @@ async function handleDelete() {
 
 async function handleSubmit() {
   if (!newCharacter.value.name || !newCharacter.value.systemPrompt) {
-    alert('请填写名称和系统提示词')
+    toast.warning('请填写名称和系统提示词')
     return
   }
 
@@ -241,25 +266,29 @@ async function handleSubmit() {
     const validExamples = exampleDialogues.value.filter(
       ex => ex.user && ex.user.trim() && ex.assistant && ex.assistant.trim()
     )
-    
+
     const characterData = {
       ...newCharacter.value,
-      exampleDialogues: validExamples.length > 0 
-        ? JSON.stringify(validExamples) 
+      exampleDialogues: validExamples.length > 0
+        ? JSON.stringify(validExamples)
         : null
     }
-    
+
+    // 保存编辑模式状态，因为 cancelForm 会重置它
+    const wasEditMode = isEditMode.value
+
     if (isEditMode.value) {
       await updateCharacter(editingCharacterId.value, characterData)
-      alert('角色更新成功')
     } else {
       await createCharacter(characterData)
-      alert('角色创建成功')
     }
     characters.value = await fetchCharacters()
     cancelForm()
+
+    // 表单关闭后再显示成功提示，使用保存的状态
+    toast.success(wasEditMode ? '角色更新成功' : '角色创建成功')
   } catch (error) {
-    alert(isEditMode.value ? '更新失败' : '创建失败')
+    toast.error(isEditMode.value ? '更新失败' : '创建失败')
   }
 }
 

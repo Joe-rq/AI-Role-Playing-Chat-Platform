@@ -21,6 +21,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useToast } from '../composables/useToast'
 
 const props = defineProps({
   modelValue: {
@@ -40,26 +41,27 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 
 const inputValue = ref('')
+const toast = useToast()
 
 function addTag() {
   const tag = inputValue.value.trim()
-  
+
   // 验证：非空、不重复、不超长、不超数量
   if (!tag) return
   if (props.modelValue.includes(tag)) {
-    alert('标签已存在')
+    toast.warning('标签已存在')
     inputValue.value = ''
     return
   }
   if (tag.length > props.maxLength) {
-    alert(`标签长度不能超过${props.maxLength}个字符`)
+    toast.warning(`标签长度不能超过${props.maxLength}个字符`)
     return
   }
   if (props.modelValue.length >= props.maxTags) {
-    alert(`最多只能添加${props.maxTags}个标签`)
+    toast.warning(`最多只能添加${props.maxTags}个标签`)
     return
   }
-  
+
   // 添加标签
   emit('update:modelValue', [...props.modelValue, tag])
   inputValue.value = ''

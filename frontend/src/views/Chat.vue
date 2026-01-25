@@ -131,6 +131,7 @@ import 'highlight.js/styles/github-dark.css' // 代码高亮样式
 import Compressor from 'compressorjs'
 import { fetchCharacter, streamChat, uploadImage, saveMessage } from '../services/api'
 import { useChatHistory } from '../composables/useChatHistory'
+import { useToast } from '../composables/useToast'
 
 // 注册常用语言
 hljs.registerLanguage('javascript', javascript)
@@ -152,6 +153,7 @@ hljs.registerLanguage('md', markdown)
 
 const route = useRoute()
 const router = useRouter()
+const toast = useToast()
 
 // 配置 Markdown-it 支持代码高亮
 const md = new MarkdownIt({
@@ -306,7 +308,7 @@ async function handleImageSelect(event) {
     uploadedImageUrl.value = result.url
   } catch (error) {
     console.error('图片压缩或上传失败:', error)
-    alert('图片上传失败，请重试')
+    toast.error('图片上传失败，请重试')
     clearImage()
   } finally {
     isUploading.value = false
@@ -475,16 +477,17 @@ async function confirmClearHistory() {
   showClearDialog.value = false
   try {
     await clearHistory()
-    
+
     // 如果角色有greeting，重新添加
     if (character.value?.greeting) {
       addMessage('assistant', character.value.greeting)
     }
-    
+
     await scrollToBottom()
+    toast.success('历史记录已清空')
   } catch (error) {
     console.error('清空历史失败:', error)
-    alert('清空历史失败，请重试')
+    toast.error('清空历史失败，请重试')
   }
 }
 

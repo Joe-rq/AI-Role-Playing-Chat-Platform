@@ -62,6 +62,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { getSessions, deleteSession, exportSession } from '../services/api'
 import ConfirmDialog from './ConfirmDialog.vue'
+import { useToast } from '../composables/useToast'
 
 const props = defineProps({
   characterId: {
@@ -88,6 +89,7 @@ const totalCount = ref(0)
 const pageSize = 20
 const showDeleteConfirm = ref(false)
 const sessionToDelete = ref(null)
+const toast = useToast()
 
 const hasMore = computed(() => sessions.value.length < totalCount.value)
 
@@ -158,9 +160,10 @@ async function confirmDelete() {
     // 刷新会话列表
     currentPage.value = 1
     await loadSessions()
+    toast.success('会话已删除')
   } catch (error) {
     console.error('删除会话失败:', error)
-    alert('删除失败，请重试')
+    toast.error('删除失败，请重试')
   } finally {
     closeDeleteConfirm()
   }
@@ -169,6 +172,8 @@ async function confirmDelete() {
 async function handleExport(sessionKey) {
   try {
     const data = await exportSession(sessionKey)
+
+    // 下载为JSON文件
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -176,9 +181,11 @@ async function handleExport(sessionKey) {
     a.download = `session-${sessionKey}.json`
     a.click()
     URL.revokeObjectURL(url)
+
+    toast.success('会话导出成功')
   } catch (error) {
     console.error('导出会话失败:', error)
-    alert('导出失败，请重试')
+    toast.error('导出失败，请重试')
   }
 }
 

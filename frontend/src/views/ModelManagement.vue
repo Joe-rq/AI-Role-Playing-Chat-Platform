@@ -75,6 +75,7 @@ import { getModels, createModel, updateModel, deleteModel, testModelConnection }
 import Drawer from '../components/Drawer.vue'
 import ModelForm from '../components/ModelForm.vue'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
+import { useToast } from '../composables/useToast'
 
 const models = ref([])
 const loading = ref(true)
@@ -83,6 +84,7 @@ const editingModel = ref(null)
 const showDeleteConfirm = ref(false)
 const modelToDelete = ref(null)
 const testingModelId = ref(null)
+const toast = useToast()
 
 onMounted(async () => {
   await loadModels()
@@ -94,7 +96,7 @@ async function loadModels() {
     models.value = await getModels()
   } catch (error) {
     console.error('加载模型列表失败:', error)
-    alert('加载失败：' + error.message)
+    toast.error('加载失败：' + error.message)
   } finally {
     loading.value = false
   }
@@ -131,14 +133,16 @@ async function handleSave(modelData) {
   try {
     if (editingModel.value?.id) {
       await updateModel(editingModel.value.id, modelData)
+      toast.success('模型更新成功')
     } else {
       await createModel(modelData)
+      toast.success('模型创建成功')
     }
     await loadModels()
     closeModelDialog()
   } catch (error) {
     console.error('保存模型失败:', error)
-    alert('保存失败：' + error.message)
+    toast.error('保存失败：' + error.message)
   }
 }
 
@@ -156,9 +160,10 @@ async function confirmDelete() {
   try {
     await deleteModel(modelToDelete.value)
     await loadModels()
+    toast.success('模型删除成功')
   } catch (error) {
     console.error('删除模型失败:', error)
-    alert('删除失败：' + error.message)
+    toast.error('删除失败：' + error.message)
   } finally {
     closeDeleteConfirm()
   }
@@ -168,9 +173,10 @@ async function toggleEnabled(model) {
   try {
     await updateModel(model.id, { isEnabled: !model.isEnabled })
     await loadModels()
+    toast.success(model.isEnabled ? '模型已禁用' : '模型已启用')
   } catch (error) {
     console.error('更新模型状态失败:', error)
-    alert('更新失败：' + error.message)
+    toast.error('更新失败：' + error.message)
   }
 }
 
@@ -180,13 +186,17 @@ async function handleTest(model) {
     const result = await testModelConnection(model.id)
 
     if (result.success) {
-      alert(`✅ ${result.message}\n\n模型: ${result.details?.model || model.modelId}\nToken使用: ${JSON.stringify(result.details?.usage || {})}`)
+      const details = result.details?.model
+        ? `\n模型: ${result.details.model}\nToken使用: ${JSON.stringify(result.details.usage || {})}`
+        : ''
+      toast.success(`${result.message}${details}`, 5000)
     } else {
-      alert(`❌ ${result.message}\n\n错误详情: ${result.details?.error || '未知错误'}`)
+      const errorDetail = result.details?.error ? `\n错误详情: ${result.details.error}` : ''
+      toast.error(`${result.message}${errorDetail}`, 5000)
     }
   } catch (error) {
     console.error('测试连接失败:', error)
-    alert('测试失败：' + error.message)
+    toast.error('测试失败：' + error.message)
   } finally {
     testingModelId.value = null
   }
