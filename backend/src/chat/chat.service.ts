@@ -81,22 +81,28 @@ export class ChatService {
             }
         }
 
-        // 添加当前用户消息
+        // ✅ 方案C：混合处理 - 如果有图片，先用GLM识别，再传给角色模型
+        let userMessage = chatRequest.message;
         if (chatRequest.imageUrl) {
-            // 多模态消息（带图片）
-            messages.push({
-                role: 'user',
-                content: [
-                    { type: 'text', text: chatRequest.message },
-                    { type: 'image_url', image_url: { url: chatRequest.imageUrl } },
-                ],
-            });
-        } else {
-            messages.push({
-                role: 'user',
-                content: chatRequest.message,
-            });
+            this.logger.log('检测到图片，使用GLM模型进行图片识别...');
+            try {
+                const imageDescription = await this.getImageDescription(chatRequest.imageUrl);
+                // 将图片描述添加到用户消息前面
+                userMessage = `[图片内容: ${imageDescription}]\n\n${chatRequest.message}`;
+                this.logger.log(`图片识别完成: ${imageDescription.slice(0, 100)}...`);
+            } catch (error) {
+                this.logger.error('图片识别失败', error);
+                throw new BadRequestException(
+                    `图片识别失败：${error.message}。请确保已在模型管理中配置 GLM-4.6V-Flash 模型。`
+                );
+            }
         }
+
+        // 添加当前用户消息（纯文本，包含图片描述）
+        messages.push({
+            role: 'user',
+            content: userMessage,
+        });
 
         // 日志：记录最终发送的消息数量
         this.logger.log(`LLM请求 - 总消息数: ${messages.length} (system: 1, history: ${messages.length - 2}, current: 1)`);
@@ -459,6 +465,114 @@ export class ChatService {
             ],
             defaultModel: this.configService.get<string>('OPENAI_MODEL') || 'gpt-4o-mini'
         };
+    }
+
+    /**
+     * 使用GLM模型识别图片内容
+     * @param imageUrl 图片URL
+     * @returns 图片描述文本
+     */
+    private async getImageDescription(imageUrl: string): Promise<string> {
+        // 查找GLM模型配置
+        const glmModelId = 'glm-4.6v-flash';
+        const glmConfig = await this.modelsService.findByModelId(glmModelId);
+
+        if (!glmConfig) {
+            throw new BadRequestException(
+                `未找到 GLM-4.6V-Flash 模型配置。请在模型管理页面添加该模型，用于图片识别功能。`
+            );
+        }
+
+        if (!glmConfig.isEnabled) {
+            throw new BadRequestException(
+                `GLM-4.6V-Flash 模型已被禁用。请在模型管理页面启用该模型以使用图片识别功能。`
+            );
+        }
+
+        // 将图片转换为 base64（如果是本地路径）
+        let imageData = imageUrl;
+        if (imageUrl.startsWith('http://localhost') || imageUrl.startsWith('http://127.0.0.1')) {
+            try {
+                // 从本地文件系统读取图片
+                const fs = await import('fs');
+                const path = await import('path');
+
+                // 提取文件路径
+                const urlObj = new URL(imageUrl);
+                const filepath = path.join(process.cwd(), urlObj.pathname);
+
+                // 读取文件并转换为 base64
+                const imageBuffer = fs.readFileSync(filepath);
+                const base64Image = imageBuffer.toString('base64');
+                const mimeType = this.getMimeType(filepath);
+                imageData = `data:${mimeType};base64,${base64Image}`;
+
+                this.logger.log(`图片已转换为 base64 格式 (${(base64Image.length / 1024).toFixed(2)}KB)`);
+            } catch (error) {
+                this.logger.error('读取本地图片失败:', error);
+                throw new BadRequestException(`无法读取图片文件：${error.message}`);
+            }
+        }
+
+        // 创建GLM专用的OpenAI实例
+        const decryptedApiKey = this.modelsService.getDecryptedApiKey(glmConfig);
+        const glmClient = new OpenAI({
+            apiKey: decryptedApiKey,
+            baseURL: glmConfig.baseURL,
+        });
+
+        // 调用GLM进行图片识别
+        try {
+            this.logger.log(`调用 GLM API - modelId: ${glmModelId}, imageData length: ${imageData.length}`);
+            this.logger.log(`imageData 前100个字符: ${imageData.substring(0, 100)}`);
+
+            const response = await glmClient.chat.completions.create({
+                model: glmModelId,
+                messages: [
+                    {
+                        role: 'user',
+                        content: [
+                            { type: 'image_url', image_url: { url: imageData } },
+                            { type: 'text', text: '请详细描述这张图片的内容，包括主要物体、场景、颜色、氛围等细节。' },
+                        ],
+                    },
+                ],
+                max_tokens: 500,
+            });
+
+            this.logger.log(`GLM 响应: ${JSON.stringify(response.choices[0])}`);
+
+            // GLM-4.6V-Flash 可能使用 reasoning_content 字段返回内容
+            const message = response.choices[0]?.message as any;
+            const description = message?.reasoning_content || message?.content || '无法识别图片内容';
+
+            return description;
+        } catch (error) {
+            this.logger.error('GLM API 调用失败:', {
+                modelId: glmModelId,
+                error: error.message,
+                status: error.status,
+                response: error.response?.data || error.response,
+            });
+            throw new BadRequestException(`图片识别失败：${error.status || ''} ${error.message}`);
+        }
+    }
+
+    /**
+     * 根据文件路径获取 MIME 类型
+     */
+    private getMimeType(filepath: string): string {
+        const ext = filepath.toLowerCase().split('.').pop();
+        if (!ext) return 'image/jpeg';
+
+        const mimeTypes: Record<string, string> = {
+            'jpg': 'image/jpeg',
+            'jpeg': 'image/jpeg',
+            'png': 'image/png',
+            'gif': 'image/gif',
+            'webp': 'image/webp',
+        };
+        return mimeTypes[ext] || 'image/jpeg';
     }
 
     /**

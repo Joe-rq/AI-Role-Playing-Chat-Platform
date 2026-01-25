@@ -113,7 +113,7 @@
             v-model.number="formData.defaultMaxTokens"
             min="1"
             max="32000"
-            step="100"
+            step="1"
             class="form-input"
           />
           <p class="hint">最大生成长度</p>
