@@ -246,16 +246,18 @@ async function handleDelete() {
     const { ok, data } = await deleteCharacter(characterToDelete.value.id)
 
     if (!ok) {
-      const message = data.message || '删除失败'
-      const hasHistory = data.statusCode === 400 && /对话记录/.test(message)
+      const message = data.error?.message || data.message || '删除失败'
+      const hasHistory = data.error?.code === 'CHARACTER_HAS_SESSIONS' || /对话记录/.test(message)
       if (hasHistory) {
         // 显示清空历史确认对话框
-        clearHistoryMessage.value = `${message}\n是否清空该角色历史并继续删除？`
+        clearHistoryMessage.value = `${message}\n\n是否清空该角色的所有历史记录并继续删除？`
         showClearHistoryDialog.value = true
+        showDeleteDialog.value = false
         return
       }
 
       toast.error(message)
+      showDeleteDialog.value = false
       return
     }
 
@@ -265,29 +267,36 @@ async function handleDelete() {
     console.error('删除操作出错:', error)
     toast.error('网络错误，请稍后再试')
   } finally {
-    showDeleteDialog.value = false
     characterToDelete.value = null
   }
 }
 
 async function handleClearHistoryAndDelete() {
   try {
+    console.log('开始清空历史...', characterToDelete.value.id)
     const clearResult = await deleteCharacterHistory(characterToDelete.value.id)
+    console.log('清空历史结果:', clearResult)
+
     if (!clearResult.ok) {
-      toast.error(clearResult.data.message || '清空历史失败')
+      toast.error(clearResult.data?.error?.message || clearResult.data?.message || '清空历史失败')
       return
     }
 
+    console.log('开始删除角色...')
     const retry = await deleteCharacter(characterToDelete.value.id)
+    console.log('删除角色结果:', retry)
+
     if (!retry.ok) {
-      toast.error(retry.data.message || '删除失败')
+      toast.error(retry.data?.error?.message || retry.data?.message || '删除失败')
       return
     }
 
+    console.log('刷新角色列表...')
     characters.value = await fetchCharacters()
-    toast.success(retry.data.message || '删除成功')
+    toast.success(retry.data?.message || '删除成功')
   } catch (error) {
     console.error('删除操作出错:', error)
+    console.error('错误详情:', JSON.stringify(error))
     toast.error('网络错误，请稍后再试')
   } finally {
     showClearHistoryDialog.value = false
