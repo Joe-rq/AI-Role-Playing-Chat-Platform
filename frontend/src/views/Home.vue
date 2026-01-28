@@ -243,8 +243,15 @@ function confirmDelete(character) {
 
 async function handleDelete() {
   try {
-    const { ok, data } = await deleteCharacter(characterToDelete.value.id)
+    // 防御性检查
+    if (!characterToDelete.value?.id) {
+      toast.error('删除信息丢失，请重试')
+      showDeleteDialog.value = false
+      return
+    }
 
+    const { ok, data } = await deleteCharacter(characterToDelete.value.id)
+    
     if (!ok) {
       const message = data.error?.message || data.message || '删除失败'
       const hasHistory = data.error?.code === 'CHARACTER_HAS_SESSIONS' || /对话记录/.test(message)
@@ -255,53 +262,57 @@ async function handleDelete() {
         showDeleteDialog.value = false
         return
       }
-
+      
       toast.error(message)
       showDeleteDialog.value = false
+      characterToDelete.value = null
       return
     }
-
+    
     characters.value = await fetchCharacters()
     toast.success(data.message || '删除成功')
+    showDeleteDialog.value = false
+    characterToDelete.value = null
   } catch (error) {
     console.error('删除操作出错:', error)
-    toast.error('网络错误，请稍后再试')
-  } finally {
-    characterToDelete.value = null
+    toast.error(`删除失败: ${error.message || '未知错误'}`)
+    showDeleteDialog.value = false
   }
 }
 
 async function handleClearHistoryAndDelete() {
   try {
-    console.log('开始清空历史...', characterToDelete.value.id)
-    const clearResult = await deleteCharacterHistory(characterToDelete.value.id)
-    console.log('清空历史结果:', clearResult)
+    // 防御性检查
+    if (!characterToDelete.value?.id) {
+      toast.error('删除信息丢失，请重试')
+      showClearHistoryDialog.value = false
+      showDeleteDialog.value = false
+      return
+    }
 
+    const clearResult = await deleteCharacterHistory(characterToDelete.value.id)
+    
     if (!clearResult.ok) {
       toast.error(clearResult.data?.error?.message || clearResult.data?.message || '清空历史失败')
       return
     }
 
-    console.log('开始删除角色...')
     const retry = await deleteCharacter(characterToDelete.value.id)
-    console.log('删除角色结果:', retry)
-
+    
     if (!retry.ok) {
       toast.error(retry.data?.error?.message || retry.data?.message || '删除失败')
       return
     }
 
-    console.log('刷新角色列表...')
     characters.value = await fetchCharacters()
     toast.success(retry.data?.message || '删除成功')
+    characterToDelete.value = null
   } catch (error) {
     console.error('删除操作出错:', error)
-    console.error('错误详情:', JSON.stringify(error))
-    toast.error('网络错误，请稍后再试')
+    toast.error(`删除失败: ${error.message || '未知错误'}`)
   } finally {
     showClearHistoryDialog.value = false
     showDeleteDialog.value = false
-    characterToDelete.value = null
   }
 }
 
