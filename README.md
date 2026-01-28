@@ -236,14 +236,6 @@ curl http://localhost:3000/characters
 - [x] **🆕 安全加密**: API Key加密存储，保护敏感信息。
 - [x] **🆕 测试功能**: 内置API Key测试，提升用户体验。
 
-## 📚 详细文档
-
-- [📖 用户指南](USER_GUIDE.md) - 完整的使用说明和最佳实践
-- [📋 实施报告](IMPLEMENTATION_REPORT.md) - 详细的实施过程和技术细节
-- [🐛 问题修复](BUGFIX_REPORT.md) - 已修复的问题和解决方案
-- [📊 项目总结](SUMMARY.md) - 项目概览和核心成果
-- [✅ 最终验证](FINAL_VERIFICATION.md) - 功能验证和测试报告
-
 ## 🎯 功能清单
 
 ### 已实现功能
