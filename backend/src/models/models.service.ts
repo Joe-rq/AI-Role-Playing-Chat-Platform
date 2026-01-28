@@ -19,7 +19,7 @@ export class ModelsService {
   constructor(
     @InjectRepository(Model)
     private modelsRepository: Repository<Model>,
-  ) {}
+  ) { }
 
   /**
    * 获取所有模型配置（API Key脱敏）
@@ -171,6 +171,35 @@ export class ModelsService {
     try {
       const decryptedApiKey = decrypt(model.apiKey);
 
+      // 特殊处理 Mem0 记忆服务
+      if (model.provider === 'Memory' || model.modelType === 'Memory') {
+        const { default: axios } = await import('axios');
+        // 测试 Mem0 连接：尝试搜索（即便没有结果也能证明连接成功）
+        const response = await axios.post(
+          `${model.baseURL}/v2/memories/search/`,
+          {
+            query: 'test connection',
+            user_id: 'test_user',
+          },
+          {
+            headers: {
+              Authorization: `Token ${decryptedApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            timeout: 10000,
+          },
+        );
+
+        return {
+          success: true,
+          message: 'Mem0 连接成功！',
+          details: {
+            status: response.status,
+            data: response.data,
+          },
+        };
+      }
+
       // 动态导入OpenAI SDK
       const { default: OpenAI } = await import('openai');
       const openai = new OpenAI({
@@ -200,6 +229,7 @@ export class ModelsService {
         details: {
           error: error.message,
           code: error.code,
+          response: error.response?.data,
         },
       };
     }

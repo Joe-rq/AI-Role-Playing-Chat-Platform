@@ -23,7 +23,13 @@
           <div class="model-header">
             <div class="header-main">
               <h3>{{ model.name }}</h3>
-              <span class="provider-badge">{{ getProviderName(model.provider) }}</span>
+              <span class="provider-badge" :class="{ 'memory-badge': model.provider === 'Memory' }">
+                {{ getProviderName(model.provider) }}
+              </span>
+              <!-- Memory 类型标签 -->
+              <span v-if="model.provider === 'Memory'" class="type-badge">
+                🧠 长期记忆
+              </span>
             </div>
             <span class="status-badge" :class="{ enabled: model.isEnabled }">
               {{ model.isEnabled ? '已启用' : '已禁用' }}
@@ -45,7 +51,8 @@
             </div>
           </div>
 
-          <div class="model-params">
+          <!-- 只显示 AI 模型的参数 -->
+          <div v-if="model.provider !== 'Memory'" class="model-params">
             <div class="param-tag">
               <span class="icon">🌡️</span>
               <span>Temp: {{ model.defaultTemperature }}</span>
@@ -145,6 +152,7 @@ function getProviderName(provider) {
     alibaba: 'Alibaba',
     deepseek: 'DeepSeek',
     zhipu: 'Zhipu AI',
+    Memory: 'Mem0.ai', // 记忆服务
   }
   return names[provider] || provider
 }
@@ -391,6 +399,24 @@ async function handleTest(model) {
   border-radius: 8px;
   font-size: 0.8rem;
   font-weight: 600;
+}
+
+.provider-badge.memory-badge {
+  background: linear-gradient(135deg, rgba(147, 51, 234, 0.1), rgba(219, 39, 119, 0.1));
+  color: #9333ea;
+}
+
+.type-badge {
+  padding: 4px 12px;
+  background: linear-gradient(135deg, #f3e8ff, #fce7f3);
+  color: #9333ea;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid rgba(147, 51, 234, 0.2);
 }
 
 .status-badge {

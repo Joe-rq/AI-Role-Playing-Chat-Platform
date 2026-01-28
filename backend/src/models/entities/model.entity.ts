@@ -18,7 +18,10 @@ export class Model {
   modelId: string; // 实际模型ID，如"gpt-4o-mini"
 
   @Column({ length: 50 })
-  provider: string; // 厂商：openai, anthropic, google, alibaba, deepseek, zhipu
+  provider: string; // 厂商：openai, anthropic, google, alibaba, deepseek, zhipu, Memory
+
+  @Column({ length: 20, default: 'AI' })
+  modelType: string; // 模型类型：'AI' | 'Memory'
 
   @Column({ type: 'text' })
   apiKey: string; // 加密存储的API Key

@@ -1,6 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import axios, { AxiosInstance } from 'axios';
+import { Model } from '../models/entities/model.entity';
+import { ModelsService } from '../models/models.service';
 
 /**
  * Mem0.ai 记忆项
@@ -45,37 +49,76 @@ export interface MemorizeResult {
 }
 
 @Injectable()
-export class MemuService {
+export class MemuService implements OnModuleInit {
     private readonly logger = new Logger(MemuService.name);
-    private readonly client: AxiosInstance;
-    private enabled: boolean;
+    private client: AxiosInstance;
+    private enabled: boolean = false;
+    private apiKey: string;
+    private baseURL: string;
 
-    constructor(private readonly configService: ConfigService) {
-        const apiKey = this.configService.get<string>('MEMU_API_KEY');
-        // Mem0.ai 默认 API 地址
-        const baseURL =
-            this.configService.get<string>('MEMU_BASE_URL') ||
-            'https://api.mem0.ai';
-        this.enabled = this.configService.get<string>('MEMU_ENABLED') === 'true';
+    constructor(
+        private readonly configService: ConfigService,
+        @InjectRepository(Model)
+        private modelRepository: Repository<Model>,
+        private modelsService: ModelsService,
+    ) { }
 
-        if (!apiKey && this.enabled) {
-            this.logger.warn('Mem0 API Key 未配置，记忆功能将被禁用');
+    /**
+     * NestJS 生命周期钩子：模块初始化后调用
+     */
+    async onModuleInit() {
+        await this.initializeConfig();
+    }
+
+    /**
+     * 初始化 Mem0 配置
+     * 优先级：1. 数据库配置 2. 环境变量
+     */
+    private async initializeConfig() {
+        try {
+            // 尝试从数据库读取 Mem0 配置
+            const memoryModel = await this.modelRepository.findOne({
+                where: { provider: 'Memory', isEnabled: true } as any,
+            });
+
+            if (memoryModel) {
+                this.logger.log('从数据库加载 Mem0 配置');
+                this.apiKey = await this.modelsService.getDecryptedApiKey(memoryModel);
+                this.baseURL = memoryModel.baseURL || 'https://api.mem0.ai';
+                this.enabled = true;
+            } else {
+                // Fallback 到环境变量
+                this.logger.log('数据库无 Mem0 配置，尝试环境变量');
+                const envApiKey = this.configService.get<string>('MEMU_API_KEY');
+                this.baseURL =
+                    this.configService.get<string>('MEMU_BASE_URL') ||
+                    'https://api.mem0.ai';
+
+                if (envApiKey) {
+                    this.apiKey = envApiKey;
+                    this.enabled = this.configService.get<string>('MEMU_ENABLED') === 'true';
+                } else {
+                    this.logger.warn('环境变量中 Mem0 API Key 未配置，记忆功能禁用');
+                    this.enabled = false;
+                }
+            }
+
+            // 初始化 Axios 客户端
+            if (this.enabled) {
+                this.client = axios.create({
+                    baseURL: this.baseURL,
+                    headers: {
+                        Authorization: `Token ${this.apiKey}`,
+                        'Content-Type': 'application/json',
+                        Accept: 'application/json',
+                    },
+                    timeout: 30000,
+                });
+                this.logger.log(`Mem0 记忆服务已启用 (${this.baseURL})`);
+            }
+        } catch (error) {
+            this.logger.error('Mem0 配置初始化失败', error);
             this.enabled = false;
-        }
-
-        // Mem0.ai 使用 Token 认证格式
-        this.client = axios.create({
-            baseURL,
-            headers: {
-                Authorization: `Token ${apiKey}`,
-                'Content-Type': 'application/json',
-                Accept: 'application/json',
-            },
-            timeout: 30000, // 30秒超时
-        });
-
-        if (this.enabled) {
-            this.logger.log(`Mem0 记忆服务已启用 (${baseURL})`);
         }
     }
 

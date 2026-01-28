@@ -311,6 +311,5 @@ MIT
 **快速链接**：
 - 🌐 前端：http://localhost:5173
 - 🔧 后端：http://localhost:3000
-- 📚 文档：[USER_GUIDE.md](USER_GUIDE.md)
 - 🧪 测试：`./test-system.sh`
 

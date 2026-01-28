@@ -59,6 +59,19 @@ const initialModels = [
     description: 'Anthropic的高性能模型',
     sortOrder: 3,
   },
+  {
+    name: 'Mem0.ai - 长期记忆',
+    modelId: 'mem0-platform',
+    provider: 'Memory',
+    apiKey: process.env.MEMU_API_KEY || 'your-mem0-api-key-here', // 从环境变量读取或手动配置
+    baseURL: 'https://api.mem0.ai',
+    isEnabled: false, // 默认禁用，需要用户配置后启用
+    defaultTemperature: null,
+    defaultMaxTokens: null,
+    description: '长期记忆服务，为AI角色提供跨会话记忆能力',
+    sortOrder: 99,
+    modelType: 'Memory', // 关键：标记为记忆服务
+  },
 ];
 
 async function seedModels() {
@@ -92,8 +105,8 @@ async function seedModels() {
 
       // 插入模型
       await queryRunner.query(
-        `INSERT INTO models (name, modelId, provider, apiKey, baseURL, isEnabled, defaultTemperature, defaultMaxTokens, description, sortOrder, createdAt, updatedAt)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
+        `INSERT INTO models (name, modelId, provider, apiKey, baseURL, isEnabled, defaultTemperature, defaultMaxTokens, description, sortOrder, modelType, createdAt, updatedAt)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
         [
           model.name,
           model.modelId,
@@ -105,6 +118,7 @@ async function seedModels() {
           model.defaultMaxTokens,
           model.description,
           model.sortOrder,
+          model.modelType || 'AI', // 默认为 AI 模型
         ],
       );
 

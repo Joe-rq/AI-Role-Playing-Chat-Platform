@@ -27,6 +27,7 @@
           <option value="alibaba">Alibaba (Qwen)</option>
           <option value="deepseek">DeepSeek</option>
           <option value="zhipu">Zhipu AI (GLM)</option>
+          <option value="Memory">Mem0.ai (长期记忆服务)</option>
         </select>
       </div>
 
@@ -88,7 +89,7 @@
         ></textarea>
       </div>
 
-      <div class="form-row">
+      <div class="form-row" v-if="formData.provider !== 'Memory'">
         <div class="form-group">
           <label>
             默认Temperature
@@ -136,7 +137,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 
 const props = defineProps({
   model: {
@@ -146,9 +147,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['save', 'cancel'])
-
-const isEdit = computed(() => !!props.model?.id)
-const showApiKey = ref(false)
 
 const formData = ref({
   name: props.model?.name || '',
@@ -160,6 +158,19 @@ const formData = ref({
   defaultTemperature: props.model?.defaultTemperature ?? 0.7,
   defaultMaxTokens: props.model?.defaultMaxTokens ?? 2000,
   description: props.model?.description || '',
+})
+
+const isEdit = computed(() => !!props.model?.id)
+const showApiKey = ref(false)
+
+// 监听厂商变化，自动设置默认值
+watch(() => formData.value.provider, (newVal) => {
+  if (newVal === 'Memory' && !isEdit.value) {
+    formData.value.name = 'Mem0.ai - 长期记忆'
+    formData.value.modelId = 'mem0-platform'
+    formData.value.baseURL = 'https://api.mem0.ai'
+    formData.value.description = '长期记忆服务，为AI角色提供跨会话记忆能力'
+  }
 })
 
 function handleSubmit() {
@@ -350,4 +361,3 @@ button {
   color: var(--text-primary);
 }
 </style>
-

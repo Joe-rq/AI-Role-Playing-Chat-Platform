@@ -19,7 +19,15 @@ export class CreateModelDto {
   modelId: string;
 
   @IsString()
-  @IsIn(['openai', 'anthropic', 'google', 'alibaba', 'deepseek', 'zhipu'])
+  @IsIn([
+    'openai',
+    'anthropic',
+    'google',
+    'alibaba',
+    'deepseek',
+    'zhipu',
+    'Memory',
+  ])
   provider: string;
 
   @IsString()
@@ -68,7 +76,15 @@ export class UpdateModelDto {
 
   @IsOptional()
   @IsString()
-  @IsIn(['openai', 'anthropic', 'google', 'alibaba', 'deepseek', 'zhipu'])
+  @IsIn([
+    'openai',
+    'anthropic',
+    'google',
+    'alibaba',
+    'deepseek',
+    'zhipu',
+    'Memory',
+  ])
   provider?: string;
 
   @IsOptional()
