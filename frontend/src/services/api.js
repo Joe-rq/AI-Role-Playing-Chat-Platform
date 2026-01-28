@@ -73,14 +73,33 @@ export async function uploadImage(file) {
     return res.json()
 }
 
+/**
+ * 获取持久化用户ID
+ * 存储在 localStorage 中，使记忆能跨会话共享
+ * @returns 持久化的用户标识
+ */
+export function getPersistentUserId() {
+    const STORAGE_KEY = 'app_persistent_user_id';
+    let userId = localStorage.getItem(STORAGE_KEY);
+    if (!userId) {
+        // 生成唯一的用户ID：user_时间戳_随机字符串
+        userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        localStorage.setItem(STORAGE_KEY, userId);
+    }
+    return userId;
+}
+
 // 流式对话 (SSE)
 export async function* streamChat(characterId, message, history = [], imageUrl = null, sessionKey = null, signal = null) {
+    // ✅ 使用持久化用户ID替代会话级sessionKey，实现跨会话记忆共享
+    const memoryUserId = getPersistentUserId();
+
     const payload = {
         characterId,
         message,
         history,
         ...(imageUrl && { imageUrl }),
-        ...(sessionKey && { sessionKey }), // ✅ 添加 sessionKey 到请求体
+        sessionKey: memoryUserId, // ✅ 使用持久化用户ID作为记忆标识
     }
 
     const res = await fetch(`${API_BASE}/chat/stream`, {
