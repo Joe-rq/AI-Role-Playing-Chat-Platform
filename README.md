@@ -16,6 +16,7 @@
 - **🆕 多模型管理**: 支持OpenAI、Anthropic、Google、DeepSeek等6大AI厂商，可在界面灵活管理和切换。
 - **🆕 安全加密**: API Key使用AES-256-CBC加密存储，前端脱敏显示。
 - **🆕 一键测试**: 内置API Key测试功能，即时验证配置有效性。
+- **🆕 长期记忆**: 集成 Mem0.ai，角色拥有跨会话的长期记忆能力，根据历史对话个性化回应。
 - **Modern UI**: 采用 Vue3 + Premium Aesthetics 设计，包含毛玻璃特效 (Glassmorphism) 和流畅动画。
 - **移动端适配**: 完美支持手机端访问。
 
@@ -24,6 +25,7 @@
 - **Backend**: NestJS, Node.js
 - **Database**: SQLite (TypeORM), 易于迁移至 MySQL
 - **AI Service**: OpenAI SDK (兼容 DeepSeek, GPT-4o, Claude, Gemini 等)
+- **AI Memory**: Mem0.ai (Long-term Memory)
 - **Security**: AES-256-CBC 加密存储 API Key
 - **File Storage**: Local Storage (Multer)
 
