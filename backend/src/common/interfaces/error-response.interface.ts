@@ -4,11 +4,11 @@
 export interface ErrorResponse {
   success: false;
   error: {
-    code: string;           // 错误代码，如 "INVALID_INPUT"
-    message: string;        // 用户友好的错误信息
-    details?: any;          // 详细错误信息（仅开发环境）
-    timestamp: string;      // 错误发生时间
-    path: string;           // 请求路径
+    code: string; // 错误代码，如 "INVALID_INPUT"
+    message: string; // 用户友好的错误信息
+    details?: any; // 详细错误信息（仅开发环境）
+    timestamp: string; // 错误发生时间
+    path: string; // 请求路径
   };
 }
 

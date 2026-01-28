@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Model } from './entities/model.entity';
@@ -8,7 +12,8 @@ import { encrypt, decrypt, maskApiKey } from './encryption.util';
 @Injectable()
 export class ModelsService {
   // 简单的内存缓存，避免每次都查数据库
-  private modelCache: Map<string, { model: Model; timestamp: number }> = new Map();
+  private modelCache: Map<string, { model: Model; timestamp: number }> =
+    new Map();
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5分钟缓存
 
   constructor(
@@ -23,7 +28,7 @@ export class ModelsService {
     const models = await this.modelsRepository.find({
       order: { sortOrder: 'ASC', createdAt: 'DESC' },
     });
-    return models.map(model => this.toDto(model));
+    return models.map((model) => this.toDto(model));
   }
 
   /**
@@ -34,7 +39,7 @@ export class ModelsService {
       where: { isEnabled: true },
       order: { sortOrder: 'ASC', createdAt: 'DESC' },
     });
-    return models.map(model => this.toDto(model));
+    return models.map((model) => this.toDto(model));
   }
 
   /**
@@ -81,7 +86,9 @@ export class ModelsService {
       where: { modelId: createModelDto.modelId },
     });
     if (existing) {
-      throw new BadRequestException(`Model with modelId "${createModelDto.modelId}" already exists`);
+      throw new BadRequestException(
+        `Model with modelId "${createModelDto.modelId}" already exists`,
+      );
     }
 
     // 加密API Key
@@ -120,7 +127,9 @@ export class ModelsService {
         where: { modelId: updateModelDto.modelId },
       });
       if (existing && existing.id !== id) {
-        throw new BadRequestException(`Model with modelId "${updateModelDto.modelId}" already exists`);
+        throw new BadRequestException(
+          `Model with modelId "${updateModelDto.modelId}" already exists`,
+        );
       }
     }
 
@@ -151,7 +160,9 @@ export class ModelsService {
   /**
    * 测试模型连接
    */
-  async testConnection(id: number): Promise<{ success: boolean; message: string; details?: any }> {
+  async testConnection(
+    id: number,
+  ): Promise<{ success: boolean; message: string; details?: any }> {
     const model = await this.modelsRepository.findOne({ where: { id } });
     if (!model) {
       throw new NotFoundException(`Model with ID ${id} not found`);

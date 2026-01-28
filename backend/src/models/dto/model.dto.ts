@@ -1,4 +1,13 @@
-import { IsString, IsBoolean, IsNumber, IsOptional, IsIn, MinLength, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsBoolean,
+  IsNumber,
+  IsOptional,
+  IsIn,
+  MinLength,
+  Min,
+  Max,
+} from 'class-validator';
 
 export class CreateModelDto {
   @IsString()

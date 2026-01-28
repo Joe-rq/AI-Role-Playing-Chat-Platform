@@ -67,7 +67,9 @@ export class ModelsController {
    * DELETE /models/:id - 删除模型配置
    */
   @Delete(':id')
-  async remove(@Param('id', ParseIntPipe) id: number): Promise<{ message: string }> {
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<{ message: string }> {
     await this.modelsService.remove(id);
     return { message: 'Model deleted successfully' };
   }
@@ -76,7 +78,9 @@ export class ModelsController {
    * POST /models/:id/test - 测试模型连接
    */
   @Post(':id/test')
-  async testConnection(@Param('id', ParseIntPipe) id: number): Promise<{ success: boolean; message: string; details?: any }> {
+  async testConnection(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<{ success: boolean; message: string; details?: any }> {
     return this.modelsService.testConnection(id);
   }
 }

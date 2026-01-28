@@ -79,7 +79,7 @@ async function seedModels() {
       // 检查模型是否已存在
       const existing = await queryRunner.query(
         'SELECT * FROM models WHERE modelId = ?',
-        [model.modelId]
+        [model.modelId],
       );
 
       if (existing.length > 0) {
@@ -105,7 +105,7 @@ async function seedModels() {
           model.defaultMaxTokens,
           model.description,
           model.sortOrder,
-        ]
+        ],
       );
 
       console.log(`✅ 已添加模型: ${model.name}`);

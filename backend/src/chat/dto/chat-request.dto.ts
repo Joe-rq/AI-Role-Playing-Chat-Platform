@@ -1,32 +1,42 @@
-import { IsString, IsOptional, IsArray, ValidateNested, IsNumber } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsArray,
+  ValidateNested,
+  IsNumber,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class ChatMessageDto {
-    @IsString()
-    role: 'user' | 'assistant';
+  @IsString()
+  role: 'user' | 'assistant';
 
-    @IsString()
-    content: string;
+  @IsString()
+  content: string;
 
-    @IsOptional()
-    @IsString()
-    imageUrl?: string;
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
 }
 
 export class ChatRequestDto {
-    @IsNumber()
-    characterId: number;
+  @IsNumber()
+  characterId: number;
 
-    @IsString()
-    message: string;
+  @IsString()
+  message: string;
 
-    @IsOptional()
-    @IsString()
-    imageUrl?: string;
+  @IsOptional()
+  @IsString()
+  sessionKey?: string; // 用于 memU 记忆隔离
 
-    @IsOptional()
-    @IsArray()
-    @ValidateNested({ each: true })
-    @Type(() => ChatMessageDto)
-    history?: ChatMessageDto[];
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ChatMessageDto)
+  history?: ChatMessageDto[];
 }

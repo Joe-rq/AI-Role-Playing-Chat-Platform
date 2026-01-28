@@ -11,5 +11,4 @@ import { Session } from '../chat/entities/session.entity';
   providers: [CharactersService],
   exports: [CharactersService],
 })
-export class CharactersModule { }
-
+export class CharactersModule {}

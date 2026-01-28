@@ -388,6 +388,7 @@ async function sendMessage() {
       userMessage,
       history,
       userImage,
+      sessionKey.value, // ✅ 传递 sessionKey 到后端
       currentAbortController.signal // 传入 signal
     )) {
       fullResponse += chunk

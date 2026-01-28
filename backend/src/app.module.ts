@@ -12,6 +12,7 @@ import { ChatModule } from './chat/chat.module';
 import { UploadModule } from './upload/upload.module';
 import { ModelsModule } from './models/models.module';
 import { Model } from './models/entities/model.entity';
+import { MemuModule } from './memu/memu.module';
 
 @Module({
   imports: [
@@ -35,12 +36,17 @@ import { Model } from './models/entities/model.entity';
         // 上下文窗口配置
         MAX_HISTORY_TURNS: Joi.number().default(20),
 
+        // memU 记忆服务配置
+        MEMU_API_KEY: Joi.string().optional(),
+        MEMU_BASE_URL: Joi.string().uri().default('https://api.memu.so'),
+        MEMU_ENABLED: Joi.string().valid('true', 'false').default('false'),
+
         // CORS 配置（可选）
         CORS_ORIGINS: Joi.string().optional(),
       }),
       validationOptions: {
         allowUnknown: true, // 允许其他未定义的环境变量
-        abortEarly: false,  // 显示所有验证错误，而不是遇到第一个就停止
+        abortEarly: false, // 显示所有验证错误，而不是遇到第一个就停止
       },
     }),
     TypeOrmModule.forRoot({
@@ -53,9 +59,9 @@ import { Model } from './models/entities/model.entity';
     ChatModule,
     UploadModule,
     ModelsModule,
+    MemuModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
-
+export class AppModule {}

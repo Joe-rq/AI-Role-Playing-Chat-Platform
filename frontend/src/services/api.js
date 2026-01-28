@@ -74,12 +74,13 @@ export async function uploadImage(file) {
 }
 
 // 流式对话 (SSE)
-export async function* streamChat(characterId, message, history = [], imageUrl = null, signal = null) {
+export async function* streamChat(characterId, message, history = [], imageUrl = null, sessionKey = null, signal = null) {
     const payload = {
         characterId,
         message,
         history,
         ...(imageUrl && { imageUrl }),
+        ...(sessionKey && { sessionKey }), // ✅ 添加 sessionKey 到请求体
     }
 
     const res = await fetch(`${API_BASE}/chat/stream`, {

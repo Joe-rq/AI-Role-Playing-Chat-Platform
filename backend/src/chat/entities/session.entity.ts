@@ -1,28 +1,37 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
+} from 'typeorm';
 import { Character } from '../../characters/entities/character.entity';
 import { Message } from './message.entity';
 
 @Entity('sessions')
 export class Session {
-    @PrimaryGeneratedColumn()
-    id: number;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-    @Column({ length: 100, unique: true })
-    sessionKey: string;
+  @Column({ length: 100, unique: true })
+  sessionKey: string;
 
-    @Column()
-    characterId: number;
+  @Column()
+  characterId: number;
 
-    @ManyToOne(() => Character)
-    @JoinColumn({ name: 'characterId' })
-    character: Character;
+  @ManyToOne(() => Character)
+  @JoinColumn({ name: 'characterId' })
+  character: Character;
 
-    @OneToMany(() => Message, message => message.session)
-    messages: Message[];
+  @OneToMany(() => Message, (message) => message.session)
+  messages: Message[];
 
-    @CreateDateColumn()
-    createdAt: Date;
+  @CreateDateColumn()
+  createdAt: Date;
 
-    @UpdateDateColumn()
-    updatedAt: Date;
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

@@ -15,7 +15,7 @@ export class CharactersService {
     private readonly characterRepository: Repository<Character>,
     @InjectRepository(Session)
     private readonly sessionRepository: Repository<Session>,
-  ) { }
+  ) {}
 
   async create(createCharacterDto: CreateCharacterDto): Promise<Character> {
     const character = this.characterRepository.create(createCharacterDto);
@@ -39,7 +39,10 @@ export class CharactersService {
     return character;
   }
 
-  async update(id: number, updateCharacterDto: UpdateCharacterDto): Promise<Character> {
+  async update(
+    id: number,
+    updateCharacterDto: UpdateCharacterDto,
+  ): Promise<Character> {
     const character = await this.findOne(id);
     Object.assign(character, updateCharacterDto);
     return this.characterRepository.save(character);
