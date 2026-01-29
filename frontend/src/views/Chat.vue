@@ -63,10 +63,10 @@
         
         <div class="toolbar">
           <div class="left-tools">
-            <label class="tool-btn" title="上传图片">
+            <button type="button" class="tool-btn" title="上传图片" @click="openFilePicker">
               <span class="icon">📷</span>
-              <input type="file" accept="image/*" @change="handleImageSelect" hidden />
-            </label>
+            </button>
+            <input ref="fileInputRef" type="file" accept="image/*" @change="handleImageSelect" class="file-input-hidden" />
           </div>
           
           <div class="right-tools">
@@ -177,6 +177,8 @@ const isLoading = ref(false)
 const isComposing = ref(false) // 跟踪输入法composition状态
 const messagesContainer = ref(null)
 const previewImage = ref(null)
+let previewObjectUrl = null
+const fileInputRef = ref(null)
 const uploadedImageUrl = ref(null)
 const uploadProgress = ref(0) // 上传进度
 const isUploading = ref(false) // 上传中状态
@@ -268,6 +270,13 @@ async function scrollToBottomAndHide() {
 function goBack() { router.push('/') }
 function renderMarkdown(content) { return md.render(content || '') }
 
+function openFilePicker() {
+  if (isUploading.value) return
+  if (fileInputRef.value) {
+    fileInputRef.value.click()
+  }
+}
+
 async function scrollToBottom() {
   await nextTick()
   if (messagesContainer.value) {
@@ -276,15 +285,39 @@ async function scrollToBottom() {
 }
 
 async function handleImageSelect(event) {
-  const file = event.target.files[0]
+  const input = event.target
+  const file = input.files && input.files[0]
   if (!file) return
+  if (isUploading.value) return
+
+  if (!file.type || !file.type.startsWith('image/')) {
+    toast.error('请选择图片文件')
+    input.value = ''
+    return
+  }
+
+  const maxSizeMb = 10
+  const maxBytes = maxSizeMb * 1024 * 1024
+  if (file.size > maxBytes) {
+    toast.error(`图片过大，请选择小于 ${maxSizeMb}MB 的图片`)
+    input.value = ''
+    return
+  }
   
   // 立即显示预览
-  previewImage.value = URL.createObjectURL(file)
+  if (previewObjectUrl) {
+    URL.revokeObjectURL(previewObjectUrl)
+  }
+  previewObjectUrl = URL.createObjectURL(file)
+  previewImage.value = previewObjectUrl
   isUploading.value = true
   uploadProgress.value = 0
   
+  let progressInterval = null
   try {
+    // 让 UI 先更新，避免大图压缩时卡顿感
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
     // 使用 Compressor.js 压缩图片
     const compressedFile = await new Promise((resolve, reject) => {
       new Compressor(file, {
@@ -298,14 +331,14 @@ async function handleImageSelect(event) {
     })
     
     // 模拟上传进度（因为 uploadImage 是 fetch，不支持进度回调）
-    const progressInterval = setInterval(() => {
+    progressInterval = setInterval(() => {
       if (uploadProgress.value < 90) {
         uploadProgress.value += 10
       }
     }, 100)
     
     const result = await uploadImage(compressedFile)
-    clearInterval(progressInterval)
+    if (progressInterval) clearInterval(progressInterval)
     uploadProgress.value = 100
     
     uploadedImageUrl.value = result.url
@@ -314,11 +347,17 @@ async function handleImageSelect(event) {
     toast.error('图片上传失败，请重试')
     clearImage()
   } finally {
+    if (progressInterval) clearInterval(progressInterval)
+    input.value = ''
     isUploading.value = false
   }
 }
 
 function clearImage() {
+  if (previewObjectUrl) {
+    URL.revokeObjectURL(previewObjectUrl)
+    previewObjectUrl = null
+  }
   previewImage.value = null
   uploadedImageUrl.value = null
   uploadProgress.value = 0
@@ -813,6 +852,18 @@ async function confirmClearHistory() {
 }
 
 .tool-btn .icon { font-size: 1.1rem; }
+
+.file-input-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 
 .send-btn {
   width: 44px;
