@@ -736,6 +736,75 @@ if (serverMessages.length > messages.value.length) {
 
 ---
 
+### 4.3 坑三：DeepSeek看不了图片，怎么办？
+
+**当时发生了什么？**
+
+我一开始用DeepSeek作为AI模型，但当我尝试发图片给AI让它识别时，一直报错。图片上传是成功的，但DeepSeek就是"看不见"图片，一直返回错误信息。
+
+**怎么排查的？**
+
+1. **检查错误信息**：API返回的错误提示说模型不支持图片输入
+2. **查DeepSeek的官方文档**：发现DeepSeek目前只支持纯文本对话，不支持多模态（看图）功能
+3. **思考解决方案**：既然DeepSeek不能看图，那就找一个能看图的AI来帮忙
+
+**怎么解决的？**
+
+采用了**"分工合作"**的方案：
+- **GLM-4V-Flash**（智谱AI的视觉模型）：专门负责看图并生成图片描述
+- **DeepSeek**：负责基于文字描述进行对话
+
+**工作流程就像这样：**
+
+1. 用户发了一张猫咪照片
+2. **GLM-4V-Flash"看"图**："这是一只橘色的小猫，正趴在窗台上晒太阳"
+3. 把这个描述传给**DeepSeek**
+4. **DeepSeek回复**（用角色语气）："哇，好可爱的小橘猫！（眼睛发光）我也想在窗台上晒太阳~ 🐱⭐"
+
+**代码实现的关键点：**
+
+```typescript
+// 后端处理图片消息
+async function handleImageMessage(imageUrl: string, userMessage: string) {
+  // 第一步：用GLM-4V-Flash识别图片
+  const imageDescription = await glm4v.chat.completions.create({
+    model: 'glm-4v-flash',
+    messages: [
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: '请描述这张图片的内容' },
+          { type: 'image_url', image_url: { url: imageUrl } }
+        ]
+      }
+    ]
+  })
+  
+  const description = imageDescription.choices[0].message.content
+  
+  // 第二步：把图片描述和用户消息一起发给DeepSeek
+  const deepseekResponse = await deepseek.chat.completions.create({
+    model: 'deepseek-chat',
+    messages: [
+      { role: 'system', content: character.systemPrompt },
+      { role: 'user', content: `用户发了一张图片，内容是：${description}。用户说：${userMessage}` }
+    ],
+    stream: true
+  })
+  
+  return deepseekResponse
+}
+```
+
+**经验教训：**
+
+1. **不同AI模型有不同的专长**：DeepSeek擅长长文本对话，GLM-4V擅长看图
+2. **"分工合作"可以解决单模型能力不足的问题**：把复杂任务拆成多个简单任务
+3. **API文档要看仔细**：一开始没看DeepSeek的文档，以为它支持多模态，浪费了不少时间
+4. **GLM-4V-Flash是免费的**：智谱AI提供的这个视觉模型成本很低，适合项目使用
+
+---
+
 ## 四、提示词是怎么设计的？
 
 ### 4.1 什么是提示词？
