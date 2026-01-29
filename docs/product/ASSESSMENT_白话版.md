@@ -573,94 +573,76 @@ async buildMessageWithImage(userMessage: string, imageUrl?: string) {
 
 ---
 
-### 4.3 坑三：数据库表怎么都建不起来
+### 4.3 坑三：DeepSeek看不了图片，怎么办？
 
 **当时发生了什么？**
 
-我写了代码来存聊天记录，但是一运行，发现数据库里根本没有表！我明明写了实体类（Entity），但数据库就是空的。
+我一开始用DeepSeek作为AI模型，但当我尝试发图片给AI让它识别时，一直报错。图片上传是成功的，但DeepSeek就是"看不见"图片，一直返回错误信息。
 
 **怎么排查的？**
 
-1. **先看数据库**：用命令行打开SQLite，执行`.tables`，确实只有`characters`表，没有`sessions`和`messages`表
-2. **检查实体类代码**：`session.entity.ts`和`message.entity.ts`都写了`@Entity()`装饰器，看起来没错
-3. **检查模块配置**：在`chat.module.ts`里用`TypeOrmModule.forFeature([Session, Message])`注册了
-4. **查官方文档**：TypeORM说要在`app.module.ts`的`forRoot`里配置`entities`
-
-**发现问题！**
-
-打开`app.module.ts`，看到：
-```typescript
-TypeOrmModule.forRoot({
-  entities: [Character],  // ❌ 只有Character，没有Session和Message！
-  synchronize: true,
-})
-```
-
-原来TypeORM要在全局配置里注册所有实体，只在模块里注册是不够的！
+1. **检查错误信息**：API返回的错误提示说模型不支持图片输入
+2. **查DeepSeek的官方文档**：发现DeepSeek目前只支持纯文本对话，不支持多模态（看图）功能
+3. **思考解决方案**：既然DeepSeek不能看图，那就找一个能看图的AI来帮忙
 
 **怎么解决的？**
 
-很简单，把`Session`和`Message`加到`entities`数组里：
+采用了**"分工合作"**的方案：
+- **GLM-4V-Flash**（智谱AI的视觉模型）：专门负责看图并生成图片描述
+- **DeepSeek**：负责基于文字描述进行对话
+
+**工作流程就像这样：**
+
+1. 用户发了一张猫咪照片
+2. **GLM-4V-Flash"看"图**："这是一只橘色的小猫，正趴在窗台上晒太阳"
+3. 把这个描述传给**DeepSeek**
+4. **DeepSeek回复**（用角色语气）："哇，好可爱的小橘猫！（眼睛发光）我也想在窗台上晒太阳~ 🐱⭐"
+
+**代码实现的关键点：**
+
 ```typescript
-import { Session } from './chat/entities/session.entity';
-import { Message } from './chat/entities/message.entity';
-
-TypeOrmModule.forRoot({
-  entities: [Character, Session, Message],  // ✅ 三个实体都注册了
-  synchronize: true,
-})
+// 后端处理图片消息
+async function handleImageMessage(imageUrl: string, userMessage: string) {
+  // 第一步：用GLM-4V-Flash识别图片
+  const imageDescription = await glm4v.chat.completions.create({
+    model: 'glm-4v-flash',
+    messages: [
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: '请描述这张图片的内容' },
+          { type: 'image_url', image_url: { url: imageUrl } }
+        ]
+      }
+    ]
+  })
+  
+  const description = imageDescription.choices[0].message.content
+  
+  // 第二步：把图片描述和用户消息一起发给DeepSeek
+  const deepseekResponse = await deepseek.chat.completions.create({
+    model: 'deepseek-chat',
+    messages: [
+      { role: 'system', content: character.systemPrompt },
+      { role: 'user', content: `用户发了一张图片，内容是：${description}。用户说：${userMessage}` }
+    ],
+    stream: true
+  })
+  
+  return deepseekResponse
+}
 ```
-
-重启服务器，数据库里终于有`sessions`和`messages`表了！
 
 **经验教训：**
 
-1. **TypeORM有两个注册层级**：全局`forRoot`负责建表，模块`forFeature`负责使用
-2. **新增实体后必须更新全局配置**：不能只改模块配置
-3. **数据库没表先检查entities配置**：这是最常见的遗漏点
+1. **不同AI模型有不同的专长**：DeepSeek擅长长文本对话，GLM-4V擅长看图
+2. **"分工合作"可以解决单模型能力不足的问题**：把复杂任务拆成多个简单任务
+3. **API文档要看仔细**：一开始没看DeepSeek的文档，以为它支持多模态，浪费了不少时间
+4. **GLM-4V-Flash是免费的**：智谱AI提供的这个视觉模型成本很低，适合项目使用
 
 ---
 
-### 4.4 坑四：SQLite不支持ENUM类型
-
-**当时发生了什么？**
-
-我在`Message`实体里定义了`role`字段，想限制只能是`'user'`或`'assistant'`：
-```typescript
-@Column({ type: 'enum', enum: ['user', 'assistant'] })
-role: 'user' | 'assistant';
-```
-
-结果一运行，报错：
-```
-DataTypeNotSupportedError: Data type "enum" in "Message.role" is not supported by "sqlite" database.
-```
-
-**怎么排查的？**
-
-1. **读错误信息**：明确说了SQLite不支持`enum`类型
-2. **查文档**：SQLite确实没有ENUM类型，只有`INTEGER`、`TEXT`、`REAL`、`BLOB`、`NULL`这五种
-3. **思考替代方案**：用`varchar`代替，TypeScript类型约束保持联合类型
-
-**怎么解决的？**
-
-把`type: 'enum'`改成`type: 'varchar'`：
-```typescript
-@Column({ type: 'varchar' })  // ✅ 改用varchar
-role: 'user' | 'assistant';   // TypeScript类型约束仍保留
-```
-
-这样既兼容SQLite，TypeScript又会在编译期检查类型安全。
-
-**经验教训：**
-
-1. **数据库选型要考虑类型兼容性**：SQLite轻量但功能有限
-2. **分层设计**：数据库限制 ≠ 类型安全丧失，TypeScript层仍可做类型约束
-3. **错误信息是最好的老师**：`DataTypeNotSupportedError`直接告诉你问题所在
-
----
-
-### 4.5 坑五：刷新页面后AI回复消失（最诡异的bug）
+### 4.4 坑四：刷新页面后AI回复消失（最诡异的bug）
 
 **当时发生了什么？**
 
@@ -736,72 +718,78 @@ if (serverMessages.length > messages.value.length) {
 
 ---
 
-### 4.3 坑三：DeepSeek看不了图片，怎么办？
+### 4.4 坑四：找不到"创建角色"按钮
 
 **当时发生了什么？**
 
-我一开始用DeepSeek作为AI模型，但当我尝试发图片给AI让它识别时，一直报错。图片上传是成功的，但DeepSeek就是"看不见"图片，一直返回错误信息。
+用户打开网站首页，看到有3个预设角色（傲娇魔法少女、温柔邻家姐姐、赛博黑客），但想自己创建一个新角色。可是翻遍了整个页面，就是找不到"创建角色"按钮在哪！
 
 **怎么排查的？**
 
-1. **检查错误信息**：API返回的错误提示说模型不支持图片输入
-2. **查DeepSeek的官方文档**：发现DeepSeek目前只支持纯文本对话，不支持多模态（看图）功能
-3. **思考解决方案**：既然DeepSeek不能看图，那就找一个能看图的AI来帮忙
+1. **检查页面布局**：首页显示3个角色卡片，但看不到创建按钮
+2. **看代码逻辑**：检查`Home.vue`的模板
+3. **发现问题**：创建按钮用`v-if="characters.length === 0"`控制显示，只有列表为空时才显示按钮
+4. **根本原因**：因为有seed预设角色，列表永远不会为空，所以按钮永远不会显示！
+
+**为什么会这样？**
+
+这是产品设计缺陷 - 我假设"用户第一次使用时没有角色"，但实际系统已经初始化了3个seed角色，导致这个假设错误。
 
 **怎么解决的？**
 
-采用了**"分工合作"**的方案：
-- **GLM-4V-Flash**（智谱AI的视觉模型）：专门负责看图并生成图片描述
-- **DeepSeek**：负责基于文字描述进行对话
+**设计方案改进：创建按钮应该始终可见，不需要条件显示**
 
-**工作流程就像这样：**
+```vue
+<template>
+  <div class="home">
+    <div class="header">
+      <h1>选择角色</h1>
+      <!-- 关键：按钮放在这里，始终可见 -->
+      <button class="create-btn" @click="showCreateForm = true">+ 创建角色</button>
+    </div>
+    
+    <!-- 角色列表 -->
+    <div class="character-list">
+      <!-- 显示所有角色... -->
+    </div>
+    
+    <!-- 空状态提示 -->
+    <div v-if="characters.length === 0" class="empty">
+      <p>暂无角色，点击上方按钮创建你的第一个角色！</p>
+    </div>
+  </div>
+</template>
 
-1. 用户发了一张猫咪照片
-2. **GLM-4V-Flash"看"图**："这是一只橘色的小猫，正趴在窗台上晒太阳"
-3. 把这个描述传给**DeepSeek**
-4. **DeepSeek回复**（用角色语气）："哇，好可爱的小橘猫！（眼睛发光）我也想在窗台上晒太阳~ 🐱⭐"
-
-**代码实现的关键点：**
-
-```typescript
-// 后端处理图片消息
-async function handleImageMessage(imageUrl: string, userMessage: string) {
-  // 第一步：用GLM-4V-Flash识别图片
-  const imageDescription = await glm4v.chat.completions.create({
-    model: 'glm-4v-flash',
-    messages: [
-      {
-        role: 'user',
-        content: [
-          { type: 'text', text: '请描述这张图片的内容' },
-          { type: 'image_url', image_url: { url: imageUrl } }
-        ]
-      }
-    ]
-  })
-  
-  const description = imageDescription.choices[0].message.content
-  
-  // 第二步：把图片描述和用户消息一起发给DeepSeek
-  const deepseekResponse = await deepseek.chat.completions.create({
-    model: 'deepseek-chat',
-    messages: [
-      { role: 'system', content: character.systemPrompt },
-      { role: 'user', content: `用户发了一张图片，内容是：${description}。用户说：${userMessage}` }
-    ],
-    stream: true
-  })
-  
-  return deepseekResponse
+<style scoped>
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
 }
+
+.create-btn {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  padding: 12px 24px;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  white-space: nowrap;
+}
+</style>
 ```
+
+**改进点：**
+1. ✅ 标题和按钮用flex布局并排显示
+2. ✅ 创建按钮始终在页面右上角可见
+3. ✅ 空状态提示改为"点击上方按钮"
 
 **经验教训：**
 
-1. **不同AI模型有不同的专长**：DeepSeek擅长长文本对话，GLM-4V擅长看图
-2. **"分工合作"可以解决单模型能力不足的问题**：把复杂任务拆成多个简单任务
-3. **API文档要看仔细**：一开始没看DeepSeek的文档，以为它支持多模态，浪费了不少时间
-4. **GLM-4V-Flash是免费的**：智谱AI提供的这个视觉模型成本很低，适合项目使用
+1. **可发现性很重要**：重要功能的入口应该始终可见，不要深度隐藏
+2. **不要做假设**：不要假设某个条件一定成立（如"首次使用必然无数据"）
+3. **要考虑边界条件**：如果有默认数据（seed角色），也要提供操作入口
+4. **测试要全面**：要有数据、无数据、部分数据等各种情况都要测到
 
 ---
 
