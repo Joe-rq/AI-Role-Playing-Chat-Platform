@@ -185,11 +185,144 @@ sequenceDiagram
 | **Git管理** | **GLM 4.7** | 自动生成了符合 Conventional Commits 规范的提交信息。 |
 
 ### 5.2 典型问题解决 (AI辅助)
-**案例：SSE流式响应JSON解析错误**
-- **问题**：前端报错 `SyntaxError: Unexpected token`。
-- **AI分析**：Codex 指出 TCP 数据包分片可能导致一行 SSE 数据被截断。
-- **解决方案**：AI 建议在前端实现 `buffer` 机制，将未完成的行暂存，等到下一次 chunk 到达后再拼接解析。
-- **思考**：通过此Bug理解了HTTP流式传输的底层原理，不再单纯依赖库，而是理解了数据包的边界处理。
+
+#### 案例一：SSE流式响应JSON解析错误
+
+**问题描述：**
+前端在接收流式响应时频繁报错 `SyntaxError: Unexpected token`，导致打字机效果中断。
+
+**分析过程：**
+1. **初步排查**：检查SSE数据格式，发现数据行被截断
+2. **深入分析**：怀疑TCP数据包分片导致一行数据被分割到多个chunk中
+3. **AI辅助定位**：向Codex描述问题现象，AI指出这是流式传输中的典型边界问题
+
+**解决方案：**
+```javascript
+// 实现buffer机制处理不完整数据
+let buffer = ''
+for await (const chunk of response.body) {
+  const text = new TextDecoder().decode(chunk)
+  buffer += text
+  
+  // 按行分割，保留未完成的部分
+  const lines = buffer.split('\n')
+  buffer = lines.pop() // 最后一行可能不完整，保留到buffer
+  
+  for (const line of lines) {
+    if (line.startsWith('data: ')) {
+      // 处理完整的数据行
+      const data = JSON.parse(line.slice(6))
+      // 更新UI...
+    }
+  }
+}
+```
+
+**经验总结：**
+- 理解了HTTP流式传输的底层原理，不再单纯依赖库
+- 学会了处理数据包边界问题的方法
+- 掌握了流式数据的缓冲处理技巧
+
+---
+
+#### 案例二：图片上传后AI无法识别
+
+**问题描述：**
+用户上传图片后，AI回复"我无法看到图片"，多模态功能失效。
+
+**分析过程：**
+1. **检查上传流程**：确认图片成功上传到服务器并返回URL
+2. **检查Prompt构造**：发现图片URL未正确插入到消息中
+3. **查看API文档**：确认视觉模型的消息格式要求
+
+**解决方案：**
+```typescript
+// 正确构造包含图片的多模态消息
+async buildVisionPrompt(imageUrl: string, userMessage: string) {
+  return {
+    model: 'gpt-4o',
+    messages: [
+      {
+        role: 'system',
+        content: this.character.systemPrompt
+      },
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'text',
+            text: userMessage
+          },
+          {
+            type: 'image_url',
+            image_url: {
+              url: imageUrl  // 确保图片URL正确插入
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**经验总结：**
+- 多模态模型的消息格式与纯文本不同，需要特殊处理
+- 调试时要分别验证上传流程和Prompt构造
+- 仔细阅读API文档中的消息格式要求
+
+---
+
+#### 案例三：TypeORM实体与DTO转换问题
+
+**问题描述：**
+后端返回的实体对象包含敏感字段（如加密后的API Key），需要转换为DTO返回给前端。
+
+**分析过程：**
+1. **识别问题**：直接返回实体对象会暴露敏感信息
+2. **设计DTO**：创建专门的DTO类，只包含需要暴露的字段
+3. **实现转换**：编写转换逻辑，处理实体到DTO的映射
+
+**解决方案：**
+```typescript
+// 定义DTO，排除敏感字段
+export class ModelResponseDto {
+  id: number
+  name: string
+  provider: string
+  modelId: string
+  // 注意：不包含apiKey字段！
+  isEnabled: boolean
+  createdAt: Date
+}
+
+// 在Service中实现转换
+@Injectable()
+export class ModelsService {
+  toResponseDto(model: Model): ModelResponseDto {
+    return {
+      id: model.id,
+      name: model.name,
+      provider: model.provider,
+      modelId: model.modelId,
+      isEnabled: model.isEnabled,
+      createdAt: model.createdAt
+      // 故意不映射 apiKey 字段
+    }
+  }
+  
+  async findAll() {
+    const models = await this.modelRepository.find()
+    // 转换为DTO，保护敏感信息
+    return models.map(m => this.toResponseDto(m))
+  }
+}
+```
+
+**经验总结：**
+- DTO模式是保护敏感数据的有效手段
+- TypeORM实体和DTO的转换需要显式处理
+- 在架构设计上要考虑数据安全和信息暴露的问题
 
 ---
 
