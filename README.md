@@ -141,13 +141,29 @@ npm run dev
 │   │   ├── services/        # API 封装
 │   │   └── router/          # 路由配置
 │
-└── docs/                    # 📚 文档
-    ├── IMPLEMENTATION_REPORT.md   # 实施报告
-    ├── USER_GUIDE.md              # 用户指南
-    ├── BUGFIX_REPORT.md           # 问题修复
-    ├── SUMMARY.md                 # 项目总结
-    ├── FINAL_VERIFICATION.md      # 最终验证
-    └── test-system.sh             # 自动化测试脚本
+ └── docs/                    # 📚 文档
+    ├── development/             # 开发文档
+    │   ├── guidelines/          # 开发指南
+    │   │   └── AGENTS.md       # AI Agent 开发指南
+    │   ├── backend-optimization-plan.md
+    │   ├── error-response-implementation.md
+    │   ├── implementation_plan.md
+    │   └── import-env-model-guide.md
+    ├── product/                 # 产品文档
+    │   ├── AGENTS.md           # AI Agent 产品说明
+    │   ├── ASSESSMENT.md       # 考核文档
+    │   ├── optimization-checklist.md
+    │   ├── prd.md              # 产品需求文档
+    │   ├── QUICK_REFERENCE.md  # 快速参考指南
+    │   └── USER_GUIDE.md       # 用户指南
+    ├── reports/                # 报告
+    │   ├── bugfixes/           # Bug 修复报告
+    │   │   ├── BUGFIX_REPORT.md
+    │   │   └── 问题解决实战记录.md
+    │   └── implementations/    # 实施报告
+    │       └── TOAST_IMPLEMENTATION.md
+    └── verification/           # 验证文档
+        └── FINAL_VERIFICATION.md
 ```
 
 ## 🔐 安全说明
