@@ -36,9 +36,9 @@ curl -X PUT http://localhost:3000/models/2 \
   -d '{"isEnabled": true}'
 ```
 
-**注意**：gpt-4o-mini的API Key是假的（`your-openai-api-key-here`），需要配置真实Key才能使用。
+**注意**：gpt-4o-mini的API Key是占位符（`your-openai-api-key-here`），需要自行配置真实Key才能使用。
 
-**临时方案**：将所有角色的模型改为`deepseek-chat`（已有真实API Key）
+**临时方案**：将所有角色的模型改为`deepseek-chat`（需自行配置真实API Key）
 
 ### 修复2：补充角色DTO字段
 修改文件：`backend/src/characters/dto/create-character.dto.ts`
@@ -163,7 +163,7 @@ apiKey: "your-openai-api-key-here"
 4. 保存
 
 ### 2. 模型选择建议
-- **推荐使用**：DeepSeek Chat（已配置真实API Key）
+- **推荐使用**：DeepSeek Chat（需自行配置真实API Key）
 - **需要配置**：GPT-4o Mini、Claude Sonnet 4.5
 
 ### 3. 前端刷新

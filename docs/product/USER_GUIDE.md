@@ -10,7 +10,7 @@
 ### 已配置模型
 | 模型名称 | Model ID | 厂商 | 状态 | API Key状态 |
 |---------|----------|------|------|------------|
-| DeepSeek Chat | deepseek-chat | DeepSeek | ✅ 已启用 | ✅ 已配置 |
+| DeepSeek Chat | deepseek-chat | DeepSeek | ✅ 已启用 | ⚠️ 需配置 |
 | GPT-4o Mini | gpt-4o-mini | OpenAI | ✅ 已启用 | ⚠️ 需配置 |
 | Claude Sonnet 4.5 | claude-sonnet-4-5-20250929 | Anthropic | ❌ 已禁用 | ⚠️ 需配置 |
 

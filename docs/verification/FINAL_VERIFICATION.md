@@ -313,7 +313,7 @@ frontend/src/
 
 | ID | 名称 | Model ID | 厂商 | 状态 | API Key | 测试结果 |
 |----|------|----------|------|------|---------|----------|
-| 1 | DeepSeek Chat | deepseek-chat | DeepSeek | ✅ 已启用 | ✅ 已配置 | ✅ 测试通过 |
+| 1 | DeepSeek Chat | deepseek-chat | DeepSeek | ✅ 已启用 | ⚠️ 需配置 | ⚠️ 未测试 |
 | 2 | GPT-4o Mini | gpt-4o-mini | OpenAI | ✅ 已启用 | ⚠️ 需配置 | ⚠️ 未测试 |
 | 3 | Claude Sonnet 4.5 | claude-sonnet-4-5-20250929 | Anthropic | ❌ 已禁用 | ⚠️ 需配置 | ⚠️ 未测试 |
 
@@ -333,9 +333,9 @@ frontend/src/
 ### 1. API Key配置建议
 
 **当前状态**：
-- ✅ DeepSeek Chat：已配置真实Key，测试通过
-- ⚠️ GPT-4o Mini：使用假Key，需要配置
-- ⚠ Claude Sonnet 4.5：使用假Key，需要配置
+- ⚠️ DeepSeek Chat：需自行配置真实Key
+- ⚠️ GPT-4o Mini：使用占位Key，需要配置
+- ⚠ Claude Sonnet 4.5：使用占位Key，需要配置
 
 **配置步骤**：
 1. 访问模型管理页面
